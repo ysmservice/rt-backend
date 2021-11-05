@@ -2,7 +2,7 @@
 
 from types import SimpleNamespace
 
-from sanic import Sanic, response
+from sanic import Sanic, Blueprint, response
 from discord.ext import commands
 from jinja2 import Environment
 from aiomysql import Pool
@@ -14,7 +14,7 @@ class TypedContext(SimpleNamespace):
     env: Environment
 
     def template(
-        self, path: str, keys: dict, **kwargs
+        self, path: str, keys: dict = {}, **kwargs
     ) -> response.BaseHTTPResponse:
         ...
 
@@ -26,3 +26,7 @@ class TypedSanic(Sanic):
 class TypedBot(commands.Bot):
     app: TypedSanic
     pool: Pool
+
+
+class TypedBlueprint(Blueprint):
+    app: TypedSanic
