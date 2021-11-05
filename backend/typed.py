@@ -1,5 +1,6 @@
-# RT.Utils - Typed
+# RT.Backend - Typed
 
+from typing import TypedDict, Union
 from types import SimpleNamespace
 
 from sanic import Sanic, Blueprint, response
@@ -30,3 +31,11 @@ class TypedBot(commands.Bot):
 
 class TypedBlueprint(Blueprint):
     app: TypedSanic
+
+
+PacketData = Union[dict, str]
+
+
+class Packet(TypedDict):
+    event_type: str
+    data: PacketData
