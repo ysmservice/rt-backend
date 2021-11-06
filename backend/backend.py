@@ -149,7 +149,6 @@ class WebSocket:
             self.app = self.blueprint.app
         else:
             self.app = None
-        print(1)
 
         return self._async_call()
 
