@@ -17,7 +17,7 @@ from websockets import (
 )
 from ujson import loads, dumps
 
-from asyncio import get_event_loop, AbstractEventLoop
+from asyncio import get_event_loop, AbstractEventLoop, Event
 from jishaku.functools import executor_function
 from os.path import exists, isfile, isdir
 from inspect import iscoroutinefunction
@@ -135,12 +135,29 @@ class WebSocket:
     app: Optional[TypedSanic]
     loop: AbstractEventLoop
     running: Literal["ok", "closed", "error"] = "ok"
+    ready = Event()
 
     def __init_subclass__(cls):
         for name in dir(cls):
             if (iscoroutinefunction(func := getattr(cls, name))
                     and "data" in func.__code__.co_varnames):
+                # クラスに実装されている通信用のイベントハンドラを保存しておく。
                 cls.handlers[func.__name__] = func
+
+    def __new__(cls, request, websocket):
+        # インスタンスを作り色々準備をしてコルーチンを返す。
+        self = super().__new__(cls)
+        self.request, self.ws = request, websocket
+        self.running = "ok"
+
+        if hasattr(self.blueprint, "app"):
+            self.loop = self.blueprint.app.loop
+            self.app = self.blueprint.app
+        else:
+            self.loop = get_event_loop()
+            self.app = None
+
+        return self._async_call()
 
     async def send(self, event_type: str, data: Union[str, dict], **kwargs) -> None:
         "Botにデータを送信します。これはイベントハンドラが何か値を返した際に自動で実行されます。"
@@ -171,7 +188,7 @@ class WebSocket:
     async def _async_call(self):
         # このWebSocketがBotに接続した際に実行されるルーチン関数です。
         # ループを実行してBotとの通信をします。
-        await self.send("on_ready", "")
+        await self.ready.wait()
         while (
             (not hasattr(self, "app") or self.app.ctx.bot.is_ready())
             and self.running == "ok"
@@ -201,17 +218,6 @@ class WebSocket:
         self.running = "closed" if code in self.running else "error"
         return await self.ws.close(code, reason)
 
-    def __init__(self, request, websocket):
-        self.request, self.ws = request, websocket
-        self.running = "ok"
-
-        if hasattr(self.blueprint, "app"):
-            self.loop = self.blueprint.app.loop
-            self.app = self.blueprint.app
-        else:
-            self.loop = get_event_loop()
-            self.app = None
-        self.task = self.loop.create_task(self._async_call())
-
     def __del__(self):
-        self.task.cancel()
+        self.running = "ok"
+        self.ready.set()
