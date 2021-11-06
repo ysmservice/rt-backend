@@ -118,9 +118,6 @@ class WebSocket:
 
     @bp.websocket("/ping")
     class WSPing(WebSocket):
-
-        blueprint = bp
-
         async def ping(self, data: PacketData) -> str:
             "Botからpingという名前のイベントが来たら呼ばれる関数です。"
             print(f"Received ping: {data}")
