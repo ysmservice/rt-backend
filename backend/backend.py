@@ -135,7 +135,6 @@ class WebSocket:
     app: Optional[TypedSanic]
     loop: AbstractEventLoop
     running: Literal["ok", "closed", "error"] = "ok"
-    ready = Event()
 
     def __init_subclass__(cls):
         for name in dir(cls):
@@ -148,14 +147,12 @@ class WebSocket:
         # インスタンスを作り色々準備をしてコルーチンを返す。
         self = super().__new__(cls)
         self.request, self.ws = request, websocket
-        self.running = "ok"
 
-        if hasattr(self.blueprint, "app"):
-            self.loop = self.blueprint.app.loop
+        if hasattr(self, "blueprint") and hasattr(self.blueprint, "app"):
             self.app = self.blueprint.app
         else:
-            self.loop = get_event_loop()
             self.app = None
+        print(1)
 
         return self._async_call()
 
@@ -188,21 +185,16 @@ class WebSocket:
     async def _async_call(self):
         # このWebSocketがBotに接続した際に実行されるルーチン関数です。
         # ループを実行してBotとの通信をします。
-        await self.ready.wait()
-        while (
-            (not hasattr(self, "app") or self.app.ctx.bot.is_ready())
-            and self.running == "ok"
-        ):
-            print(1)
+        while self.running == "ok":
             data = await self.recv()
 
             if isinstance(data, dict):
                 if hasattr(self, data["event_type"]):
                     # Botからの実行依頼のイベントハンドラが存在するものなら実行する。
                     logger.debug(f"Run {data['event_type']} event : {self.__class__.__name__}")
-                    if (data := await getattr(self, data["event_type"])(data)):
+                    if (return_data := await getattr(self, data["event_type"])(data)):
                         # もし実行したイベントから何か返されたのならそれを送り返す。
-                        await self.send(data["event_type"], data)
+                        await self.send(data["event_type"], return_data)
                 else:
                     # 存在しないイベントの場合は
                     logger.warning(
@@ -220,4 +212,3 @@ class WebSocket:
 
     def __del__(self):
         self.running = "ok"
-        self.ready.set()

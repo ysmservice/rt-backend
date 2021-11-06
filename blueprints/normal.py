@@ -15,9 +15,6 @@ async def ping(_):
 
 @bp.websocket("/wstest")
 class WSPing(WebSocket):
-
-    blueprint = bp
-
     async def ping(self, data: PacketData) -> str:
         logger.debug(f"Received ping: {data}")
         return "pong"
