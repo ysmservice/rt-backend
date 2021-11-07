@@ -4,11 +4,11 @@ from typing import TYPE_CHECKING, Callable, Optional, Union, Any, List
 
 from sanic import response, exceptions
 
+from ujson import loads, dumps
 from functools import wraps
-from ujson import dumps
 
 if TYPE_CHECKING:
-    from .backend import TypedBlueprint
+    from .backend import TypedBlueprint, Request
 
 
 def is_okip(bp: "TypedBlueprint", okip: Optional[List[str]] = None) -> Callable[..., Any]:
@@ -27,7 +27,7 @@ def is_okip(bp: "TypedBlueprint", okip: Optional[List[str]] = None) -> Callable[
 
 
 def api(
-    message: str, data: Union[str, dict, None], status: int = 200, **kwargs
+    message: str, data: Union[int, str, list, dict, None], status: int = 200, **kwargs
 ) -> response.HTTPResponse:
     "API用のレスポンスを返します。"
     kwargs["dumps"] = dumps
@@ -39,3 +39,10 @@ def api(
             "data": data
         }, **kwargs
     )
+
+
+def try_loads(request: "Request") -> Union[dict, list, str]:
+    try:
+        return loads(request.body)
+    except ValueError:
+        raise exceptions.SanicException("データが正しくありません。", 400)

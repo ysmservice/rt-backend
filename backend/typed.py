@@ -1,6 +1,6 @@
 # RT.Backend - Typed
 
-from typing import TypedDict, Union
+from typing import TypedDict, Union, Dict
 from types import SimpleNamespace
 
 from sanic import Sanic, Blueprint, response
@@ -10,11 +10,16 @@ from jinja2 import Environment
 from aiomysql import Pool
 
 
+class Datas(TypedDict):
+    ShortURL: Dict[str, str]
+
+
 class TypedContext(SimpleNamespace):
     pool: Pool
     bot: "TypedBot"
     env: Environment
     secret: dict
+    datas: Datas
 
     def template(
         self, path: str, keys: dict = {}, **kwargs

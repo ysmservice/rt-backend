@@ -23,7 +23,7 @@ from os.path import exists, isfile, isdir
 from inspect import iscoroutinefunction
 from aiomysql import create_pool
 
-from .typed import TypedSanic, TypedBot, TypedBlueprint, Packet, PacketData, Self
+from .typed import Datas, TypedSanic, TypedBot, TypedBlueprint, Packet, PacketData, Self
 
 
 aioexists = executor_function(exists)
@@ -55,6 +55,9 @@ def NewSanic(
             await app.ctx.env.get_template(path).render_async(**keys), **kwargs
         )
     app.ctx.template = template
+    app.ctx.datas = {
+        "ShortURL": {}
+    }
     del template
 
     @app.listener("before_server_start")

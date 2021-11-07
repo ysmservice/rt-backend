@@ -5,7 +5,7 @@ from sanic.exceptions import SanicException
 from ujson import loads
 
 from backend import TypedBlueprint, Self, Request
-from backend.utils import api, is_okip
+from backend.utils import api, is_okip, try_loads
 
 
 bp = TypedBlueprint("API.Help")
@@ -68,8 +68,5 @@ async def get(request: Request, category: str, command_name: str = ""):
 @bp.route("/help/update", methods=["POST"])
 @is_okip(bp)
 async def update(request: Request):
-    try:
-        me.data = loads(request.body)
-    except ValueError:
-        raise SanicException("データが正しくありません。", 400)
+    me.data = try_loads(request)
     return api("ok", None)
