@@ -23,7 +23,7 @@ from os.path import exists, isfile, isdir
 from inspect import iscoroutinefunction
 from aiomysql import create_pool
 
-from .typed import TypedSanic, TypedBot, TypedBlueprint, Packet, PacketData
+from .typed import TypedSanic, TypedBot, TypedBlueprint, Packet, PacketData, Self
 
 
 aioexists = executor_function(exists)

@@ -44,6 +44,7 @@ app = NewSanic(
     ), secret["token"], True, on_setup, (), secret["mysql"], TEMPLATE_EXTS,
     TEMPLATE_FOLDER, "RT-Backend", dumps=dumps
 )
+app.ctx.secret = secret
 
 
 # Blueprintを読み込む。
