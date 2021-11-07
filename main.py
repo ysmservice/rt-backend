@@ -51,9 +51,14 @@ for name in listdir(BLUEPRINTS_FOLDER):
     if not name.startswith("_"):
         module = import_module(f"{BLUEPRINTS_FOLDER}.{get_import_path(name)}")
         if hasattr(module, "bp"):
-            module.bp.app = app
+            try:
+                module.bp.app = app
+            except AttributeError:
+                pass
             app.blueprint(module.bp)
             logger.info(f"Loaded blueprint : {name}")
+        if hasattr(module, "on_load"):
+            module.on_load(app)
 
 
 app.run(**secret["app"])

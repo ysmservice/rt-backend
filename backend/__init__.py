@@ -1,8 +1,8 @@
 # RT - Backend
 
 from .backend import (
-    NewSanic, TypedBot, TypedBlueprint, WebSocket, logger, response,
-    Packet, PacketData
+    NewSanic, TypedSanic, TypedBot, TypedBlueprint,
+    WebSocket, logger, response, Packet, PacketData
 )
 
 

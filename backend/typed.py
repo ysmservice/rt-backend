@@ -3,9 +3,11 @@
 from typing import TypedDict, Union
 from types import SimpleNamespace
 
+from sanic.blueprint_group import BlueprintGroup
 from sanic import Sanic, Blueprint, response
 from discord.ext import commands
 from jinja2 import Environment
+
 from aiomysql import Pool
 
 
