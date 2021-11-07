@@ -2,7 +2,7 @@
 
 from backend import TypedSanic, TypedBlueprint
 
-from .test import bp as testbp
+from .normal import bp as testbp
 
 
 blueprints = (testbp,)
