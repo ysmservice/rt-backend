@@ -6,6 +6,7 @@ from sanic import response, exceptions
 
 from ujson import loads, dumps
 from functools import wraps
+from time import time
 
 if TYPE_CHECKING:
     from .backend import TypedBlueprint, Request
@@ -46,3 +47,27 @@ def try_loads(request: "Request") -> Union[dict, list, str]:
         return loads(request.body)
     except ValueError:
         raise exceptions.SanicException("データが正しくありません。", 400)
+
+
+def cooldown(bp: "TypedBlueprint", seconds: Union[int, float]):
+    "レートリミットを設定します。"
+    def decorator(function):
+        @wraps(function)
+        async def new(request, *args, **kwargs):
+            if not hasattr(bp, "_rtlib_cooldown"):
+                bp._rtlib_cooldown = {}
+            before = bp._rtlib_cooldown.get(
+                function.__name__, {}
+            ).get(request.ip, 0)
+            now = time()
+            if function.__name__ not in bp._rtlib_cooldown:
+                bp._rtlib_cooldown[function.__name__] = {}
+            bp._rtlib_cooldown[function.__name__][request.ip] = now
+            if now - before < seconds:
+                raise exceptions.SanicException(
+                    "Too many request.", 429
+                )
+            else:
+                return await function(request, *args, **kwargs)
+        return new
+    return decorator

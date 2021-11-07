@@ -1,9 +1,5 @@
 # RT.BLueprints.API - Help
 
-from sanic.exceptions import SanicException
-
-from ujson import loads
-
 from backend import TypedBlueprint, Self, Request
 from backend.utils import api, is_okip, try_loads
 
@@ -11,10 +7,6 @@ from backend.utils import api, is_okip, try_loads
 bp = TypedBlueprint("API.Help")
 me = Self(bp=bp)
 me.data = {}
-
-
-def on_load(app):
-    me.app = app
 
 
 CATEGORIES = {

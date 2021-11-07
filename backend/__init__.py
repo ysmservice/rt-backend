@@ -6,6 +6,7 @@ from .backend import (
     NewSanic, TypedSanic, TypedBot, TypedBlueprint, Self,
     WebSocket, logger, response, Packet, PacketData, Request
 )
+from .data_manager import DatabaseManager
 from . import utils
 
 

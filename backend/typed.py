@@ -1,11 +1,12 @@
 # RT.Backend - Typed
 
-from typing import TypedDict, Union, Dict
+from typing import TypedDict, Callable, Union, Dict, List
 from types import SimpleNamespace
 
 from sanic import Sanic, Blueprint, response
-from discord.ext import commands
+from sanic_limiter import Limiter
 from jinja2 import Environment
+from discord.ext import commands
 
 from aiomysql import Pool
 
@@ -20,6 +21,8 @@ class TypedContext(SimpleNamespace):
     env: Environment
     secret: dict
     datas: Datas
+    limiter: Limiter
+    tasks: List[Callable]
 
     def template(
         self, path: str, keys: dict = {}, **kwargs

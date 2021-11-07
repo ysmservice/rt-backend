@@ -5,18 +5,22 @@ from sanic.exceptions import SanicException
 from backend import TypedSanic, TypedBlueprint, Request, logger
 from backend.utils import api
 
+from .news import bp as newsbp, on_load as news_on_load
 from .short_url import bp as short_url_bp
 from .normal import bp as testbp
 from .help import bp as helpbp
 
 
-blueprints = (testbp, helpbp, short_url_bp)
+blueprints = (testbp, helpbp, short_url_bp, newsbp)
+on_loads = (news_on_load,)
 bp = TypedBlueprint.group(*blueprints, url_prefix="/api")
 
 
 def on_load(app: TypedSanic):
     for cbp in blueprints:
         cbp.app = app
+    for on_load_ in on_loads:
+        on_load_(app)
 
 
 @bp.exception(Exception)

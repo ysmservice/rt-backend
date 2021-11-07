@@ -11,6 +11,7 @@ from sanic.blueprint_group import BlueprintGroup
 from sanic.request import Request
 from sanic.log import logger
 from sanic import response
+from sanic_limiter import Limiter
 
 from websockets import (
     WebSocketServerProtocol, ConnectionClosedOK, ConnectionClosedError
@@ -39,6 +40,7 @@ def NewSanic(
 ) -> TypedSanic:
     "RTのためのバックエンドのSanicを取得するための関数です。"
     app: TypedSanic = TypedSanic(*sanic_args, **sanic_kwargs)
+    app.ctx.limiter = Limiter(app, global_limits=["1 per second"])
 
     # テンプレートエンジンを用意する。
     app.ctx.env = Environment(
@@ -58,6 +60,7 @@ def NewSanic(
     app.ctx.datas = {
         "ShortURL": {}
     }
+    app.ctx.tasks = []
     del template
 
     @app.listener("before_server_start")
@@ -75,6 +78,11 @@ def NewSanic(
         loop.create_task(app.ctx.bot.start(token, reconnect=reconnect))
         await app.ctx.bot.wait_until_ready()
         logger.info("Connected to Discord")
+        app.ctx.bot.dispatch("on_loop_ready", app)
+        # データベースなどの準備用の関数達を実行する。
+        for task in app.ctx.tasks:
+            task(app)
+        del app.ctx.tasks
 
     @app.listener("after_server_stop")
     async def close(app: TypedSanic, _: AbstractEventLoop):
