@@ -17,7 +17,7 @@ from websockets import (
 )
 from ujson import loads, dumps
 
-from asyncio import get_event_loop, AbstractEventLoop, Event
+from asyncio import AbstractEventLoop
 from jishaku.functools import executor_function
 from os.path import exists, isfile, isdir
 from inspect import iscoroutinefunction
