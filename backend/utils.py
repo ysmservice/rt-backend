@@ -57,11 +57,12 @@ def cooldown(
 ) -> Callable:
     "レートリミットを設定します。"
     def decorator(function):
-        name = function.__name__
         @wraps(function)
         async def new(request, *args, **kwargs):
             if from_path:
                 name = request.path
+            else:
+                name = function.__name__
             if not hasattr(bp, "_rtlib_cooldown"):
                 bp._rtlib_cooldown = {}
             before = bp._rtlib_cooldown.get(
@@ -79,7 +80,7 @@ def cooldown(
                     )[0][0]]
             if now - before < seconds:
                 raise exceptions.SanicException(
-                    "Too many request.", 429, quiet=True
+                    "リクエストの速度が速いです！私耐えられません！もうちょっとスローリーにお願いです。", 429
                 )
             else:
                 return await function(request, *args, **kwargs)

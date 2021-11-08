@@ -1,11 +1,11 @@
 # Normal
 sanic
-sanic-limiter
 jinja2
 flask-misaka
 ujson
 aiomysql
 aiofiles
 jishaku
+reprypt
 # Discord Web Manager
 py-cord

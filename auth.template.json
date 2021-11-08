@@ -9,5 +9,10 @@
     "app": {
         "host": "ホスト名", "port": ポート, "workers": 1
     },
-    "okip": ["127.0.0.1"]
+    "okip": ["127.0.0.1"],
+    "oauth": {
+        "client_id": "OAuthクライアントID　もしOAuthを使わない開発なら変えなくてOK",
+        "client_secret": "OAuthクライアントシークレット",
+        "secret_key": "何か適当な文字列、暗号化に使うキーです。"
+    }
 }

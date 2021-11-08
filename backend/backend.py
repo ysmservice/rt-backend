@@ -13,7 +13,6 @@ from sanic.errorpages import HTMLRenderer
 from sanic.request import Request
 from sanic.log import logger
 from sanic import response
-from sanic_limiter import Limiter
 
 from websockets import (
     WebSocketServerProtocol, ConnectionClosedOK, ConnectionClosedError
@@ -29,6 +28,7 @@ from traceback import format_exc
 from sys import argv
 
 from .typed import Datas, TypedSanic, TypedBot, TypedBlueprint, Packet, PacketData, Self
+from .oauth import DiscordOAuth
 from .utils import cooldown
 
 
@@ -40,12 +40,11 @@ aioisdir = executor_function(isdir)
 def NewSanic(
     bot_args: tuple, bot_kwargs: dict, token: str, reconnect: bool,
     on_setup_bot: Callable[[TypedBot], Any], pool_args: tuple, pool_kwargs: dict,
-    template_engine_exts: Sequence[str], template_folder: str,
+    template_engine_exts: Sequence[str], template_folder: str, oauth_kwargs: dict,
     *sanic_args, **sanic_kwargs
 ) -> TypedSanic:
     "RTのためのバックエンドのSanicを取得するための関数です。"
     app: TypedSanic = TypedSanic(*sanic_args, **sanic_kwargs)
-    app.ctx.limiter = Limiter(app, global_limits=["1 per second"])
 
     # テンプレートエンジンを用意する。
     app.ctx.env = Environment(
@@ -69,6 +68,8 @@ def NewSanic(
     app.ctx.test = argv[-1] != "production"
     del template
 
+    app.ctx.oauth = DiscordOAuth(app, **oauth_kwargs)
+
     with open("data/ipbans.txt", "r") as f:
         ipbans = f.read()
 
@@ -77,7 +78,7 @@ def NewSanic(
         # データベースのプールの準備をする。
         pool_kwargs["loop"] = loop
         app.ctx.pool = await create_pool(*pool_args, **pool_kwargs)
-        # Discordのデバッグ用ののBotの準備をする。
+        # Discordのデバッグ用のBotの準備をする。
         bot_kwargs["loop"] = loop
         app.ctx.bot = TypedBot(*bot_args, **bot_kwargs)
         app.ctx.bot.app = app
@@ -131,12 +132,14 @@ def NewSanic(
                 else:
                     return await response.file(real_path)
 
-    @app.exception(SanicException)
-    async def on_exception(request: Request, exception: SanicException):
+    @app.exception(Exception)
+    async def on_exception(request: Request, exception: Exception):
         # 500と501以外のSanicExceptionはエラーが出力されないようにする。
-        if exception.status_code in (500, 501):
-            print(format_exc())
-        return HTMLRenderer(request, exception, False).full()
+        if not isinstance(exception, SanicException):
+            exception = SanicException("内部エラーが発生しました。", 500)
+            if app.ctx.test:
+                print(format_exc())
+        return HTMLRenderer(request, exception, True).full()
 
     return app
 

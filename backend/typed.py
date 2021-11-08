@@ -1,14 +1,18 @@
 # RT.Backend - Typed
 
-from typing import TypedDict, Callable, Union, Dict, List
+from typing import (
+    TYPE_CHECKING, TypedDict, Callable, Coroutine, Union, Any, Dict, List
+)
 from types import SimpleNamespace
 
 from sanic import Sanic, Blueprint, response
-from sanic_limiter import Limiter
-from jinja2 import Environment
 from discord.ext import commands
+from jinja2 import Environment
 
 from aiomysql import Pool
+
+if TYPE_CHECKING:
+    from .oauth import DiscordOAuth
 
 
 class Datas(TypedDict):
@@ -21,8 +25,8 @@ class TypedContext(SimpleNamespace):
     env: Environment
     secret: dict
     datas: Datas
-    limiter: Limiter
     tasks: List[Callable]
+    oauth: "DiscordOAuth"
 
     def template(
         self, path: str, keys: dict = {}, **kwargs
@@ -41,6 +45,7 @@ class TypedBot(commands.Bot):
 
 class TypedBlueprint(Blueprint):
     app: TypedSanic
+    oauth: "DiscordOAuth"
 
 
 PacketData = Union[dict, str]
@@ -55,3 +60,6 @@ class Self(SimpleNamespace):
     app: TypedSanic
     bp: TypedBlueprint
     pool: Pool
+
+
+CoroutineFunction = Callable[..., Coroutine[Any, Any, Any]]

@@ -42,7 +42,7 @@ app = NewSanic(
     (), dict(
         command_prefix=PREFIX, intents=Intents(messages=False), max_messages=100
     ), secret["token"], True, on_setup, (), secret["mysql"], TEMPLATE_EXTS,
-    TEMPLATE_FOLDER, "RT-Backend", dumps=dumps
+    TEMPLATE_FOLDER, secret["oauth"], "RT-Backend", dumps=dumps
 )
 app.ctx.secret = secret
 
@@ -51,6 +51,8 @@ app.ctx.secret = secret
 for name in listdir(BLUEPRINTS_FOLDER):
     if not name.startswith("_"):
         module = import_module(f"{BLUEPRINTS_FOLDER}.{get_import_path(name)}")
+        if hasattr(module, "on_load"):
+            module.on_load(app)
         if hasattr(module, "bp"):
             try:
                 module.bp.app = app
@@ -58,8 +60,6 @@ for name in listdir(BLUEPRINTS_FOLDER):
                 pass
             app.blueprint(module.bp)
             logger.info(f"Loaded blueprint : {name}")
-        if hasattr(module, "on_load"):
-            module.on_load(app)
 
 
 app.run(**secret["app"])
