@@ -3,6 +3,7 @@
 from typing import TYPE_CHECKING, Callable, Optional, Union, Any, List
 
 from sanic import response, exceptions
+from discord.ext import tasks
 
 from ujson import loads, dumps
 from functools import wraps
@@ -50,23 +51,35 @@ def try_loads(request: "Request") -> Union[dict, list, str]:
         raise exceptions.SanicException("データが正しくありません。", 400)
 
 
-def cooldown(bp: "TypedBlueprint", seconds: Union[int, float]):
+def cooldown(
+    bp: "TypedBlueprint", seconds: Union[int, float],
+    cache_max: int = 1000, from_path: bool = False
+) -> Callable:
     "レートリミットを設定します。"
     def decorator(function):
+        name = function.__name__
         @wraps(function)
         async def new(request, *args, **kwargs):
+            if from_path:
+                name = request.path
             if not hasattr(bp, "_rtlib_cooldown"):
                 bp._rtlib_cooldown = {}
             before = bp._rtlib_cooldown.get(
-                function.__name__, {}
+                name, {}
             ).get(request.ip, 0)
             now = time()
-            if function.__name__ not in bp._rtlib_cooldown:
-                bp._rtlib_cooldown[function.__name__] = {}
-            bp._rtlib_cooldown[function.__name__][request.ip] = now
+            if name not in bp._rtlib_cooldown:
+                bp._rtlib_cooldown[name] = {}
+            bp._rtlib_cooldown[name][request.ip] = now
+            if len(bp._rtlib_cooldown[name]) >= cache_max:
+                del bp._rtlib_cooldown[name] \
+                    [sorted(
+                        bp._rtlib_cooldown[name].items(),
+                        key=lambda x: x[1]
+                    )[0][0]]
             if now - before < seconds:
                 raise exceptions.SanicException(
-                    "Too many request.", 429
+                    "Too many request.", 429, quiet=True
                 )
             else:
                 return await function(request, *args, **kwargs)

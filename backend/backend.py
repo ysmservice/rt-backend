@@ -8,6 +8,8 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from flask_misaka import Misaka
 
 from sanic.blueprint_group import BlueprintGroup
+from sanic.exceptions import SanicException
+from sanic.errorpages import HTMLRenderer
 from sanic.request import Request
 from sanic.log import logger
 from sanic import response
@@ -18,13 +20,16 @@ from websockets import (
 )
 from ujson import loads, dumps
 
-from asyncio import AbstractEventLoop
 from jishaku.functools import executor_function
 from os.path import exists, isfile, isdir
 from inspect import iscoroutinefunction
+from asyncio import AbstractEventLoop
 from aiomysql import create_pool
+from traceback import format_exc
+from sys import argv
 
 from .typed import Datas, TypedSanic, TypedBot, TypedBlueprint, Packet, PacketData, Self
+from .utils import cooldown
 
 
 aioexists = executor_function(exists)
@@ -61,7 +66,11 @@ def NewSanic(
         "ShortURL": {}
     }
     app.ctx.tasks = []
+    app.ctx.test = argv[-1] != "production"
     del template
+
+    with open("data/ipbans.txt", "r") as f:
+        ipbans = f.read()
 
     @app.listener("before_server_start")
     async def prepare(app: TypedSanic, loop: AbstractEventLoop):
@@ -91,7 +100,13 @@ def NewSanic(
         await app.ctx.bot.close()
 
     @app.middleware
+    @cooldown(app.ctx, 0.3, from_path=True)
     async def on_request(request: Request):
+        if not app.ctx.test and request.host == "146.59.153.178":
+            raise SanicException("生IPアドレスへのアクセスは禁じられています。", 403)
+        if request.ip in ipbans:
+            raise SanicException("あなたはこのウェブサイトにアクセスすることができません。", 401)
+
         # ファイルが見つかればそのファイルを返す。
         # パスを準備する。
         path = request.path
@@ -115,6 +130,13 @@ def NewSanic(
                     return await response.file_stream(real_path)
                 else:
                     return await response.file(real_path)
+
+    @app.exception(SanicException)
+    async def on_exception(request: Request, exception: SanicException):
+        # 500と501以外のSanicExceptionはエラーが出力されないようにする。
+        if exception.status_code in (500, 501):
+            print(format_exc())
+        return HTMLRenderer(request, exception, False).full()
 
     return app
 
