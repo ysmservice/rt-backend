@@ -6,6 +6,7 @@ from sanic import response, exceptions
 
 from ujson import loads, dumps
 from functools import wraps
+from asyncio import Event
 from time import time
 
 if TYPE_CHECKING:
@@ -71,3 +72,18 @@ def cooldown(bp: "TypedBlueprint", seconds: Union[int, float]):
                 return await function(request, *args, **kwargs)
         return new
     return decorator
+
+
+class DataEvent(Event):
+    data: Any = None
+
+    def set(self, data: Any):
+        self.data = data
+        super().set()
+
+    def clear(self):
+        self.data = None
+
+    async def wait(self) -> Any:
+        await super().wait()
+        return self.data

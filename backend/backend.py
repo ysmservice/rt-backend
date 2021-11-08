@@ -111,7 +111,10 @@ def NewSanic(
             if real_path.endswith(template_engine_exts):
                 return await app.ctx.template(path[1:])
             else:
-                return await response.file(real_path)
+                if real_path.endswith((".mp4", ".mp3", ".wav", ".ogg", ".avi")):
+                    return await response.file_stream(real_path)
+                else:
+                    return await response.file(real_path)
 
     return app
 

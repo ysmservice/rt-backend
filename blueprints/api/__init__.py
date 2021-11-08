@@ -6,13 +6,14 @@ from backend import TypedSanic, TypedBlueprint, Request, logger
 from backend.utils import api
 
 from .news import bp as newsbp, on_load as news_on_load
+from .tts import bp as ttsbp, on_load as tts_on_load
 from .short_url import bp as short_url_bp
 from .normal import bp as testbp
 from .help import bp as helpbp
 
 
-blueprints = (testbp, helpbp, short_url_bp, newsbp)
-on_loads = (news_on_load,)
+blueprints = (testbp, helpbp, short_url_bp, newsbp, ttsbp)
+on_loads = (news_on_load, tts_on_load)
 bp = TypedBlueprint.group(*blueprints, url_prefix="/api")
 
 
