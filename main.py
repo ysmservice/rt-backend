@@ -8,7 +8,7 @@ from ujson import load, dumps
 from os import listdir
 
 from data import (
-    BLUEPRINTS_FOLDER, COGS_FOLDER, TEMPLATE_FOLDER, TEMPLATE_EXTS, PREFIX
+    BLUEPRINTS_FOLDER, COGS_FOLDER, TEMPLATE_FOLDER, TEMPLATE_EXTS, PREFIX, AUTH_PATH
 )
 from backend import NewSanic, TypedBot, get_import_path
 
