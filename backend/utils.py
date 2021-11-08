@@ -52,10 +52,11 @@ def try_loads(request: "Request") -> Union[dict, list, str]:
 
 
 def cooldown(
-    bp: "TypedBlueprint", seconds: Union[int, float],
+    bp: "TypedBlueprint", seconds: Union[int, float], message: Optional[str] = None,
     cache_max: int = 1000, from_path: bool = False
 ) -> Callable:
     "レートリミットを設定します。"
+    message = message or "リクエストの速度が速いです！私耐えられません！もうちょっとスローリーにお願いです。{}秒待ってね。"
     def decorator(function):
         @wraps(function)
         async def new(request, *args, **kwargs):
@@ -80,7 +81,7 @@ def cooldown(
                     )[0][0]]
             if now - before < seconds:
                 raise exceptions.SanicException(
-                    "リクエストの速度が速いです！私耐えられません！もうちょっとスローリーにお願いです。", 429
+                    message.format(seconds), 429
                 )
             else:
                 return await function(request, *args, **kwargs)
