@@ -30,7 +30,8 @@ def is_okip(bp: "TypedBlueprint", okip: Optional[List[str]] = None) -> Callable[
 
 
 def api(
-    message: str, data: Union[int, str, list, dict, None], status: int = 200, **kwargs
+    message: str, data: Union[int, str, list, dict, None],
+    status: int = 200, **kwargs
 ) -> response.HTTPResponse:
     "API用のレスポンスを返します。"
     kwargs["dumps"] = dumps
