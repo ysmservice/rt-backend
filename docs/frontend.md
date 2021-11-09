@@ -24,11 +24,11 @@ RTののAPIのドキュメントです。
 }
 ```
 
-### `/discord/login` **NotAPI**
+### `/account/login` **NotAPI**
 Discordにログインさせる部分。
 
-### `/discord/logout` **NotAPI**
-Discordにログアウトさせる部分。
+### `/account/logout` **NotAPI**
+Discordからログアウトさせる部分。
 
 ### `/news`
 ニュースの一覧を返します。

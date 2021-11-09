@@ -3,13 +3,21 @@
 from sanic.response import redirect
 
 from backend import TypedSanic, TypedBlueprint, Request
-from backend.utils import cooldown
+from backend.utils import api, cooldown
 
 
-bp = TypedBlueprint("DiscordLogin", "/discord")
+bp = TypedBlueprint("DiscordLogin", "/account")
 
 
 def on_load(app: TypedSanic):
+    @bp.route("/")
+    @app.ctx.oauth.require_login(force=True)
+    async def account(request: Request):
+        data = {"login": bool(request.ctx.user)}
+        if data["login"]:
+            data["user_name"] = str(request.ctx.user)
+        return api("ok", data)
+
     @bp.route("/login")
     @cooldown(bp, 10, "クールダウン中です。{}秒後にもう一度お試しください。")
     @app.ctx.oauth.require_login()

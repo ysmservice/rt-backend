@@ -13,7 +13,7 @@ from data import (
 from backend import NewSanic, TypedBot, get_import_path
 
 
-with open("auth.json", "r") as f:
+with open(AUTH_PATH, "r") as f:
     secret = load(f)
 
 
@@ -21,7 +21,8 @@ def on_setup(bot: TypedBot) -> None:
     bot.load_extension("jishaku")
     # Cogを読み込む。
     for name in listdir(COGS_FOLDER):
-        if not name.startswith("_"):
+        if (not name.startswith("_")
+                and ("." not in name or name.endswith(".py"))):
             try:
                 bot.load_extension(
                     f"{COGS_FOLDER}.{get_import_path(name)}"
