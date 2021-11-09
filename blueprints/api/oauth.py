@@ -11,6 +11,7 @@ bp = TypedBlueprint("DiscordLogin", "/account")
 
 def on_load(app: TypedSanic):
     @bp.route("/")
+    @cooldown(bp, 0.4)
     @app.ctx.oauth.require_login(force=True)
     async def account(request: Request):
         data = {"login": bool(request.ctx.user)}

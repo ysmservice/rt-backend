@@ -7,6 +7,7 @@ from .backend import (
     WebSocket, logger, response, Packet, PacketData, Request
 )
 from .data_manager import DatabaseManager
+from .hcaptcha import hCaptcha
 from . import utils
 
 
