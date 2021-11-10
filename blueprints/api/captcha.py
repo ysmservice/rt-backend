@@ -3,7 +3,7 @@
 from backend import (
     TypedSanic, TypedBlueprint, Request, WebSocket, PacketData, hCaptcha
 )
-from backend.utils import cooldown
+from backend.utils import cooldown, is_okip
 
 from asyncio import Queue
 from time import time
@@ -47,7 +47,8 @@ def on_load(app: TypedSanic):
             }
         )
 
-    @bp.websocket("/websocket")
+    @bp.websocket("/captcha")
+    @is_okip(bp)
     class CaptchaWebSocket(WebSocket):
         async def on_ready(self, _):
             # ユーザーが認証を通ったのならBotに認証が成功したことを伝える。
