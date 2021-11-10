@@ -39,8 +39,10 @@ def on_load(app: TypedSanic):
             redirect_url="/test/captcha/end"
         )
 
-    @bp.route("/captcha/end/<data>", methods=["GET", "POST"])
+    @bp.route("/captcha/end", methods=["GET", "POST"])
     @cooldown(bp, 10)
-    @captcha.end(check=lambda data: time() - data["time"] <= 15)
-    async def captcha_end(request: Request, data: dict):
-        return text(f"CaptchaResult:{request.ctx.success} Data:{data}")
+    @captcha.end(
+        check=lambda data: time() - data["time"] <= 30
+    )
+    async def captcha_end(request: Request):
+        return text(f"CaptchaResult:{request.ctx.success} Data:{request.ctx.data}")

@@ -1,10 +1,13 @@
 # RT.Backend - OAuth
 
-from typing import TypedDict, Callable, Optional, Union, Literal, Sequence, Dict
+from typing import (
+    TypedDict, Callable, Optional, Union, Literal, Sequence, Dict, Tuple
+)
 from types import SimpleNamespace
 
 from sanic.exceptions import SanicException, ServiceUnavailable
 from sanic.response import redirect
+from discord.ext import tasks
 from discord import User
 
 from asyncio import AbstractEventLoop
@@ -46,6 +49,7 @@ class DiscordOAuth:
         self.app, self.secret_key = app, secret_key
         self.redirects: Dict[str, str] = {}
         self._session = None
+        self.state_cache: Dict[str, Tuple[str, float]] = {}
         self.app.ctx.tasks.append(
             lambda app: (
                 setattr(self, "bot", app.ctx.bot)
@@ -137,26 +141,62 @@ class DiscordOAuth:
         "pathとrequestからURLを作ります。"
         return f"{self.make_base_url(request)}{path}"
 
-    def state_generator(self, request: Request) -> str:
+    @tasks.loop(seconds=10)
+    async def cache_remover(self):
+        # Stateのキャッシュでタイムアウトしているものを削除する。
+        now = time()
+        for state, (_, timeout) in list(self.state_cache.items()):
+            if now > timeout:
+                del self.state_cache[state]
+
+    async def on_close(self):
+        if self.cache_remover.is_running():
+            self.cache_remover.cancel()
+
+    def state_generator(self, request: Request, timeout: float = 300.0) -> str:
         "`require_login`の引数`state_generator`のデフォルトです。"
-        return reprypt.encrypt(
-            f"{request.host}{request.ip}", self.secret_key,
+        now = time()
+        # 既に同じIPアドレスのキャッシュがあるなら削除する。
+        for state, (ip, _) in list(self.state_cache.items()):
+            if ip == request.ip:
+                self.state_cache[ip]
+                break
+        # stateを作成する。
+        self.state_cache[(state := reprypt.encrypt(
+            f"{request.host}{request.ip}{now}", self.secret_key,
             converter=reprypt.convert_hex
-        )
+        ))] = (request.ip, now + timeout)
+        return state
+
+    state_generator.default = True
 
     def state_checker(self, request: Request, state: str) -> bool:
         "`require_login`の引数`stage_checker`のデフォルトです。"
         try:
-            return f"{request.host}{request.ip}" == reprypt.decrypt(
+            decrypted_state = reprypt.decrypt(
                 state, self.secret_key, converter=reprypt.convert_hex
             )
         except reprypt.DecryptError:
-            return False
+            bool_ = False
+        else:
+            print(self.state_cache)
+            bool_ = (
+                self.state_cache.get(state, ("",))[0] == request.ip
+                and decrypted_state.startswith(f"{request.host}{request.ip}")
+            )
+            del self.state_cache[state]
+        finally:
+            return bool_
 
     def _wrap_route(self, func, force, scope, state_generator, state_checker):
         # RouteをOAuthログイン付きのものにする関数です。
         @wraps(func)
         async def new_route(request: Request, *args, **kwargs):
+            # もしcache_removerが動いていないのなら動かす。
+            if hasattr(state_generator, "default") and not self.cache_remover.is_running():
+                self.bot.add_listener(self.on_close)
+                self.cache_remover.start()
+
             mode = "normal"
 
             if self.bot is None:

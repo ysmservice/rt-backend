@@ -97,6 +97,7 @@ def NewSanic(
     @app.listener("after_server_stop")
     async def close(app: TypedSanic, _: AbstractEventLoop):
         # プールとBotを閉じる。
+        app.ctx.bot.dispatch("close")
         app.ctx.pool.close()
         await app.ctx.bot.close()
 

@@ -52,7 +52,7 @@ class hCaptcha:
 
     def end(
         self, extract_data: Callable[..., str] = \
-            lambda *args, **kwargs: list(kwargs.values())[-1],
+            lambda request, *args, **kwargs: request.args.get("data"),
         check: Callable[[Union[str, dict]], bool] = lambda _: True,
         maybe_json_data: bool = False
     ) -> Callable[
@@ -77,7 +77,9 @@ class hCaptcha:
                         and not maybe_json_data):
                     data = loads(data)
                 # もしデータが間違っている可能性があるのならエラーをする。
-                if not check(data):
+                if check(data):
+                    request.ctx.data = data
+                else:
                     raise SanicException(
                         "渡された情報の整合性確認に失敗しました。"
                     )
