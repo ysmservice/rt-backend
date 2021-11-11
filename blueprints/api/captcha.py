@@ -3,7 +3,7 @@
 from backend import (
     TypedSanic, TypedBlueprint, Request, WebSocket, hCaptcha
 )
-from backend.utils import cooldown, CoolDown
+from backend.utils import CoolDown, is_okip
 
 from asyncio import Queue, QueueEmpty, sleep
 from time import time
@@ -46,7 +46,8 @@ def on_load(app: TypedSanic):
             }
         )
 
-    @bp.websocket("/websocket")
+    @bp.websocket("/captcha")
+    @is_okip(bp)
     class CaptchaWebSocket(WebSocket):
 
         first = True
