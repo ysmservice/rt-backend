@@ -1,9 +1,10 @@
 # RT.Backend - Utils
 
-from typing import TYPE_CHECKING, Callable, Optional, Union, Any, List
+from typing import (
+    TYPE_CHECKING, Callable, Coroutine, Optional, Union, Any, List, Dict, Tuple
+)
 
-from sanic import response, exceptions
-from discord.ext import tasks
+from sanic import response, request, exceptions
 
 from ujson import loads, dumps
 from functools import wraps
@@ -52,12 +53,15 @@ def try_loads(request: "Request") -> Union[dict, list, str]:
         raise exceptions.SanicException("データが正しくありません。", 400)
 
 
+DEFAULT_COOLDOWN = "リクエストの速度が速いです！私耐えられません！もうちょっとスローリーにお願いです。{}秒待ってね。"
+
+
 def cooldown(
     bp: "TypedBlueprint", seconds: Union[int, float], message: Optional[str] = None,
     cache_max: int = 1000, from_path: bool = False
 ) -> Callable:
     "レートリミットを設定します。"
-    message = message or "リクエストの速度が速いです！私耐えられません！もうちょっとスローリーにお願いです。{}秒待ってね。"
+    message = message or DEFAULT_COOLDOWN
     def decorator(function):
         @wraps(function)
         async def new(request, *args, **kwargs):
@@ -103,3 +107,55 @@ class DataEvent(Event):
     async def wait(self) -> Any:
         await super().wait()
         return self.data
+
+
+class CoolDown:
+    "細かくレート制限をRouteにかけたい際に使えるデコレータの名を持つクラスです。"
+
+    rate: int
+    per: float
+    cache_max: int
+    message: str
+    strict: bool
+    max_per: float
+    cache: Dict[str, Tuple[int, float]]
+    func: Callable[..., Coroutine]
+
+    def __new__(
+        cls, rate: int, per: float, message: str = DEFAULT_COOLDOWN,
+        cache_max: int = 1000, strict: bool = True, max_per: Optional[float] = None
+    ) -> Callable[[Callable[..., Coroutine]], "CoolDown"]:
+        self = super().__new__(cls)
+        self.rate, self.per, self.strict = rate, per, strict
+        self.cache_max, self.message = cache_max, message
+        self.max_per = max_per or per * cache_max // 100
+        self.cache = {}
+
+        def decorator(func):
+            self.func = func
+            return wraps(func)(self)
+
+        return decorator
+
+    async def _async_call(self, request, *args, **kwargs):
+        before = self.cache.get(request.ip, (0, (now := time()) + self.per))
+        self.cache[request.ip] = (
+            before[0] + 1, before[1]
+        )
+        if self.cache[request.ip][1] > now:
+            if self.cache[request.ip][0] > self.rate:
+                if self.strict and self.cache[request.ip][1] < self.max_per:
+                    self.cache[request.ip][1] += self.per
+                raise exceptions.SanicException(
+                    self.message.format(self.cache[request.ip][1] - now), 429
+                )
+        else:
+            del self.cache[request.ip]
+        return await self.func(request, *args, **kwargs)
+
+    def __call__(self, request: request.Request, *args, **kwargs):
+        # もしキャッシュが最大数になったのならcacheで一番古いものを削除する。
+        if len(self.cache) >= self.cache_max:
+            del self.cache[max(list(self.cache.items()), key=lambda _, d: d[1])[0]]
+        # 非同期で実行できるようにコルーチン関数を返す。
+        return self._async_call(request, *args, **kwargs)

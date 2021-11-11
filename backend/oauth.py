@@ -179,7 +179,6 @@ class DiscordOAuth:
         except reprypt.DecryptError:
             bool_ = False
         else:
-            print(self.state_cache)
             bool_ = (
                 self.state_cache.get(state, ("",))[0] == request.ip
                 and decrypted_state.startswith(f"{request.host}{request.ip}")

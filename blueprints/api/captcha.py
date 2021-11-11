@@ -1,16 +1,15 @@
 # RT.Blueprints.API - Captcha
 
 from backend import (
-    TypedSanic, TypedBlueprint, Request, WebSocket, PacketData, hCaptcha
+    TypedSanic, TypedBlueprint, Request, WebSocket, hCaptcha
 )
-from backend.utils import cooldown
+from backend.utils import cooldown, CoolDown
 
-from asyncio import Queue
+from asyncio import Queue, QueueEmpty, sleep
 from time import time
 
 
-bp = TypedBlueprint("API.Captcha")
-queue = Queue()
+bp = TypedBlueprint("API.Captcha", "captcha")
 TIMEOUT = 300
 COOLDOWN = "クールダウン中です。{}秒後にもう一度お試しください。"
 
@@ -24,23 +23,23 @@ def on_load(app: TypedSanic):
     )
 
     @app.route("/captcha")
-    @cooldown(bp, 5, COOLDOWN)
+    @CoolDown(4, 10, COOLDOWN)
     @app.ctx.oauth.require_login()
     async def captcha_first(request: Request):
-        return captcha.start(
+        return await captcha.start(
             "userdata", {
                 "user_id": request.ctx.user.id, "timeout": time() + TIMEOUT
             }, redirect_url="/captcha/end"
         )
 
-    @app.route("/captcha/end")
-    @cooldown(bp, 5, COOLDOWN)
+    @app.route("/captcha/end", methods=["POST"])
+    @CoolDown(2, 10, COOLDOWN)
     @captcha.end(check=lambda data: data["timeout"] > time())
     async def captcha_end(request: Request):
         if request.ctx.success:
             # もし認証が成功したのならキューにユーザーIDを追加する。
             await queue.put(request.ctx.data["user_id"])
-        return app.ctx.template(
+        return await app.ctx.template(
             "captcha_result.html", keys={
                 "result": "認証に成功しました！" if request.ctx.success \
                     else "認証に失敗しました。もう一度五秒後に挑戦してください。"
@@ -49,6 +48,23 @@ def on_load(app: TypedSanic):
 
     @bp.websocket("/websocket")
     class CaptchaWebSocket(WebSocket):
+
+        first = True
+
         async def on_ready(self, _):
+            if self.first:
+                global queue
+                queue = Queue()
+                self.first = False
+
             # ユーザーが認証を通ったのならBotに認証が成功したことを伝える。
-            await self.send("on_success", str(await queue.get()))
+            while self.running == "ok":
+                try:
+                    user_id = queue.get_nowait()
+                except QueueEmpty:
+                    await sleep(0.01)
+                else:
+                    break
+            await self.send("on_success", str(user_id))
+
+    CaptchaWebSocket.app = app

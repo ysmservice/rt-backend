@@ -168,8 +168,7 @@ class WebSocket:
     handlers: Dict[str, Callable[..., Coroutine]] = {}
     request: Request = None
     ws: WebSocketServerProtocol
-    blueprint: Union[TypedBlueprint, BlueprintGroup]
-    app: Optional[TypedSanic]
+    app: Optional[TypedSanic] = None
     loop: AbstractEventLoop
     running: Literal["ok", "closed", "error"] = "ok"
 
@@ -184,11 +183,10 @@ class WebSocket:
         # インスタンスを作り色々準備をしてコルーチンを返す。
         self = super().__new__(cls)
         self.request, self.ws = request, websocket
+        self.ws.simple_websocket = self
 
-        if hasattr(self, "blueprint") and hasattr(self.blueprint, "app"):
-            self.app = self.blueprint.app
-        else:
-            self.app = None
+        if self.app is not None:
+            self.app.ctx.bot.add_listener(self.on_close)
 
         return self._async_call()
 
@@ -232,7 +230,7 @@ class WebSocket:
                         # もし実行したイベントから何か返されたのならそれを送り返す。
                         await self.send(data["event_type"], return_data)
                 else:
-                    # 存在しないイベントの場合は
+                    # 存在しないイベントの場合はエラーで切断する。
                     logger.warning(
                         f"Disconnected from bot because bot gave me an event that dosen't exists : {self.__class__.__name__}"
                     )
@@ -243,8 +241,8 @@ class WebSocket:
 
     async def close(self, code: int = 1000, reason: str = "") -> None:
         "WebSocketを終了します。"
-        self.running = "closed" if code in self.running else "error"
+        self.running = "closed" if code in (1000, 1001) else "error"
         return await self.ws.close(code, reason)
 
-    def __del__(self):
-        self.running = "ok"
+    async def on_close(self):
+        await self.close(reason="バックエンドのシャットダウンによる終了です。")

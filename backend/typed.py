@@ -42,6 +42,10 @@ class TypedBot(commands.Bot):
     app: TypedSanic
     pool: Pool
 
+    async def close(self) -> None:
+        self.dispatch("close")
+        return await super().close()
+
 
 class TypedBlueprint(Blueprint):
     app: TypedSanic

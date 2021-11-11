@@ -1,7 +1,7 @@
 # RT.Blueprints - OAuth Test
 
 from backend import TypedSanic, TypedBlueprint, hCaptcha, Request
-from backend.utils import cooldown
+from backend.utils import cooldown, CoolDown
 from sanic.response import text
 
 from time import time
@@ -12,6 +12,7 @@ bp = TypedBlueprint("Test", "/test")
 
 def on_load(app: TypedSanic):
     @bp.route("/oauth/noforce")
+    @cooldown(bp, 10)
     @app.ctx.oauth.require_login()
     async def oauth(request: app.ctx.oauth.TypedRequest):
         return text(f"UserName: {request.ctx.user.name}, ID: {request.ctx.user.id}")
@@ -46,3 +47,8 @@ def on_load(app: TypedSanic):
     )
     async def captcha_end(request: Request):
         return text(f"CaptchaResult:{request.ctx.success} Data:{request.ctx.data}")
+
+    @bp.route("/cooldown")
+    @CoolDown(5, 3)
+    async def cooldown_test(request: Request):
+        return text("There is nothing.")

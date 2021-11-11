@@ -5,6 +5,7 @@ from sanic.exceptions import SanicException
 from backend import TypedSanic, TypedBlueprint, Request, logger
 from backend.utils import api
 
+from .captcha import bp as captcha_bp, on_load as captcha_on_load
 from .oauth import bp as oauthbp, on_load as oauth_on_load
 from .news import bp as newsbp, on_load as news_on_load
 from .tts import bp as ttsbp, on_load as tts_on_load
@@ -13,8 +14,10 @@ from .normal import bp as testbp
 from .help import bp as helpbp
 
 
-blueprints = (testbp, helpbp, short_url_bp, newsbp, ttsbp, oauthbp)
-on_loads = (news_on_load, tts_on_load, oauth_on_load)
+blueprints = (
+    testbp, helpbp, short_url_bp, newsbp, ttsbp, oauthbp, captcha_bp
+)
+on_loads = (news_on_load, tts_on_load, oauth_on_load, captcha_on_load)
 bp = TypedBlueprint.group(*blueprints, url_prefix="/api")
 
 
