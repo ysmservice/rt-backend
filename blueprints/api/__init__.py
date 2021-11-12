@@ -10,12 +10,13 @@ from .oauth import bp as oauthbp, on_load as oauth_on_load
 from .news import bp as newsbp, on_load as news_on_load
 from .tts import bp as ttsbp, on_load as tts_on_load
 from .short_url import bp as short_url_bp
+from .reprypt_api import bp as repryptbp
 from .normal import bp as testbp
 from .help import bp as helpbp
 
 
 blueprints = (
-    testbp, helpbp, short_url_bp, newsbp, ttsbp, oauthbp, captcha_bp
+    testbp, helpbp, short_url_bp, newsbp, ttsbp, oauthbp, captcha_bp, repryptbp
 )
 on_loads = (news_on_load, tts_on_load, oauth_on_load, captcha_on_load)
 bp = TypedBlueprint.group(*blueprints, url_prefix="/api")
