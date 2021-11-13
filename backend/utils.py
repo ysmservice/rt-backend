@@ -69,7 +69,7 @@ DEFAULT_GET_REMOTE_ADDR = lambda request: (
 def cooldown(
     bp: "TypedBlueprint", seconds: Union[int, float], message: Optional[str] = None,
     cache_max: int = 1000, from_path: bool = False, wrap_html: bool = False,
-    get_remote_address: Callable[[Request], str] = DEFAULT_GET_REMOTE_ADDR
+    get_remote_address: Callable[[request.Request], str] = DEFAULT_GET_REMOTE_ADDR
 ) -> Callable:
     "レートリミットを設定します。"
     message = message or DEFAULT_COOLDOWN
@@ -140,7 +140,7 @@ class CoolDown:
     def __new__(
         cls, rate: int, per: float, message: str = DEFAULT_COOLDOWN,
         cache_max: int = 1000, strict: bool = True, max_per: Optional[float] = None,
-        get_remote_address: Callable[[Request], str] = DEFAULT_GET_REMOTE_ADDR
+        get_remote_address: Callable[[request.Request], str] = DEFAULT_GET_REMOTE_ADDR
     ) -> Callable[[Callable[..., Coroutine]], "CoolDown"]:
         self = super().__new__(cls)
         self.rate, self.per, self.strict = rate, per, strict
