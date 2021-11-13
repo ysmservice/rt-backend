@@ -7,7 +7,6 @@ from typing import (
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from flask_misaka import Misaka
 
-from sanic.blueprint_group import BlueprintGroup
 from sanic.exceptions import SanicException
 from sanic.errorpages import HTMLRenderer
 from sanic.request import Request
@@ -28,8 +27,8 @@ from traceback import format_exc
 from sys import argv
 
 from .typed import Datas, TypedSanic, TypedBot, TypedBlueprint, Packet, PacketData, Self
+from .utils import cooldown, wrap_html
 from .oauth import DiscordOAuth
-from .utils import cooldown
 
 
 aioexists = executor_function(exists)
@@ -102,12 +101,16 @@ def NewSanic(
         await app.ctx.bot.close()
 
     @app.middleware
-    @cooldown(app.ctx, 0.3, from_path=True)
+    @cooldown(app.ctx, 0.3, from_path=True, wrap_html=True)
     async def on_request(request: Request):
         if not app.ctx.test and request.host == "146.59.153.178":
-            raise SanicException("生IPアドレスへのアクセスは禁じられています。", 403)
+            return wrap_html(
+                request, SanicException("生IPアドレスへのアクセスは禁じられています。", 403)
+            )
         if request.ip in ipbans:
-            raise SanicException("あなたはこのウェブサイトにアクセスすることができません。", 401)
+            return wrap_html(
+                request, SanicException("あなたはこのウェブサイトにアクセスすることができません。", 401)
+            )
 
         # ファイルが見つかればそのファイルを返す。
         # パスを準備する。

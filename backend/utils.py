@@ -5,6 +5,7 @@ from typing import (
 )
 
 from sanic import response, request, exceptions
+from sanic.errorpages import HTMLRenderer
 
 from ujson import loads, dumps
 from functools import wraps
@@ -53,18 +54,29 @@ def try_loads(request: "Request") -> Union[dict, list, str]:
         raise exceptions.SanicException("データが正しくありません。", 400)
 
 
+def wrap_html(
+    request: request.Request, exception: exceptions.SanicException
+) -> response.HTTPResponse:
+    return HTMLRenderer(request, exception, True).full()
+
+
 DEFAULT_COOLDOWN = "リクエストの速度が速いです！私耐えられません！もうちょっとスローリーにお願いです。{}秒待ってね。"
+DEFAULT_GET_REMOTE_ADDR = lambda request: (
+    request.ip if request.app.ctx.test else request.headers["cf-connecting-ip"]
+)
 
 
 def cooldown(
     bp: "TypedBlueprint", seconds: Union[int, float], message: Optional[str] = None,
-    cache_max: int = 1000, from_path: bool = False
+    cache_max: int = 1000, from_path: bool = False, wrap_html: bool = False,
+    get_remote_address: Callable[[Request], str] = DEFAULT_GET_REMOTE_ADDR
 ) -> Callable:
     "レートリミットを設定します。"
     message = message or DEFAULT_COOLDOWN
     def decorator(function):
         @wraps(function)
         async def new(request, *args, **kwargs):
+            ip = get_remote_address(request)
             if from_path:
                 name = request.path
             else:
@@ -73,11 +85,11 @@ def cooldown(
                 bp._rtlib_cooldown = {}
             before = bp._rtlib_cooldown.get(
                 name, {}
-            ).get(request.ip, 0)
+            ).get(ip, 0)
             now = time()
             if name not in bp._rtlib_cooldown:
                 bp._rtlib_cooldown[name] = {}
-            bp._rtlib_cooldown[name][request.ip] = now
+            bp._rtlib_cooldown[name][ip] = now
             if len(bp._rtlib_cooldown[name]) >= cache_max:
                 del bp._rtlib_cooldown[name] \
                     [sorted(
@@ -85,9 +97,13 @@ def cooldown(
                         key=lambda x: x[1]
                     )[0][0]]
             if now - before < seconds:
-                raise exceptions.SanicException(
+                e = exceptions.SanicException(
                     message.format(seconds), 429
                 )
+                if wrap_html:
+                    return HTMLRenderer(request, e, True).full()
+                else:
+                    raise e
             else:
                 return await function(request, *args, **kwargs)
         return new
@@ -123,13 +139,15 @@ class CoolDown:
 
     def __new__(
         cls, rate: int, per: float, message: str = DEFAULT_COOLDOWN,
-        cache_max: int = 1000, strict: bool = True, max_per: Optional[float] = None
+        cache_max: int = 1000, strict: bool = True, max_per: Optional[float] = None,
+        get_remote_address: Callable[[Request], str] = DEFAULT_GET_REMOTE_ADDR
     ) -> Callable[[Callable[..., Coroutine]], "CoolDown"]:
         self = super().__new__(cls)
         self.rate, self.per, self.strict = rate, per, strict
         self.cache_max, self.message = cache_max, message
         self.max_per = max_per or per * cache_max // 100
         self.cache = {}
+        self.get_remote_address = get_remote_address
 
         def decorator(func):
             self.func = func
@@ -138,19 +156,20 @@ class CoolDown:
         return decorator
 
     async def _async_call(self, request, *args, **kwargs):
-        before = self.cache.get(request.ip, (0, (now := time()) + self.per))
-        self.cache[request.ip] = (
+        ip = self.get_remote_address(request)
+        before = self.cache.get(ip, (0, (now := time()) + self.per))
+        self.cache[ip] = (
             before[0] + 1, before[1]
         )
-        if self.cache[request.ip][1] > now:
-            if self.cache[request.ip][0] > self.rate:
-                if self.strict and self.cache[request.ip][1] < self.max_per:
-                    self.cache[request.ip][1] += self.per
+        if self.cache[ip][1] > now:
+            if self.cache[ip][0] > self.rate:
+                if self.strict and self.cache[ip][1] < self.max_per:
+                    self.cache[ip][1] += self.per
                 raise exceptions.SanicException(
-                    self.message.format(self.cache[request.ip][1] - now), 429
+                    self.message.format(self.cache[ip][1] - now), 429
                 )
         else:
-            del self.cache[request.ip]
+            del self.cache[ip]
         return await self.func(request, *args, **kwargs)
 
     def __call__(self, request: request.Request, *args, **kwargs):
