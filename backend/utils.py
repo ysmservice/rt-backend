@@ -7,6 +7,8 @@ from typing import (
 from sanic import response, request, exceptions
 from sanic.errorpages import HTMLRenderer
 
+from jishaku.functools import executor_function
+from socket import gethostbyname
 from ujson import loads, dumps
 from functools import wraps
 from asyncio import Event
@@ -16,17 +18,29 @@ if TYPE_CHECKING:
     from .backend import TypedBlueprint, Request
 
 
+bot_ip = ""
+@executor_function
+def get_ip(domain: str) -> str:
+    return gethostbyname(domain)
+
+
 def is_okip(bp: "TypedBlueprint", okip: Optional[List[str]] = None) -> Callable[..., Any]:
     "`auth.json`の`okip`にあるIPからじゃないとアクセスを拒否するようにするデコレータです。"
     def decorator(func):
         @wraps(func)
         async def new(request, *args, **kwargs):
-            if request.ip in (okip or bp.app.ctx.secret["okip"]):
+            global bot_ip
+            ip = DEFAULT_GET_REMOTE_ADDR(request)
+            ok = ip in (okip or bp.app.ctx.secret["okip"])
+            ok = ok or ip == bot_ip
+            if not ok:
+                bot_ip = await get_ip("tasuren.f5.si")
+                ok = bot_ip == ip
+            if ok:
                 return await func(request, *args, **kwargs)
-            else:
-                raise exceptions.Unauthorized(
-                    "アクセス許可IPリストにあなたのIPがないので処理ができませんでした。"
-                )
+            raise exceptions.Unauthorized(
+                "アクセス許可IPリストにあなたのIPがないので処理ができませんでした。"
+            )
         return new
     return decorator
 
