@@ -104,7 +104,7 @@ def NewSanic(
     @cooldown(app.ctx, 0.3, from_path=True, wrap_html=True)
     async def on_request(request: Request):
         if (not app.ctx.test and request.host == "146.59.153.178"
-                and not request.scheme in ("ws", "wss")):
+                and request.scheme not in ("ws", "wss")):
             return wrap_html(
                 request, SanicException("生IPアドレスへのアクセスは禁じられています。", 403)
             )
