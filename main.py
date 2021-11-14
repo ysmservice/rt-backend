@@ -1,6 +1,6 @@
 # RT Backend
 
-from discord import Intents, Game
+from discord import Intents, Game, AllowedMentions
 from sanic.log import logger
 
 from importlib import import_module
@@ -32,16 +32,13 @@ def on_setup(bot: TypedBot) -> None:
             else:
                 logger.info(f"Loaded extension : {name}")
 
-    @bot.event
-    async def on_ready():
-        await bot.change_presence(
-            activity=Game("Backend")
-        )
-
 
 app = NewSanic(
     (), dict(
-        command_prefix=PREFIX, intents=Intents(messages=False), max_messages=100
+        command_prefix=PREFIX, intents=Intents(
+            mesages=True
+        ), max_messages=100,
+        allowed_mentions=AllowedMentions.none(), activity=Game("Backend")
     ), secret["token"], True, on_setup, (), secret["mysql"], TEMPLATE_EXTS,
     TEMPLATE_FOLDER, secret["oauth"], "RT-Backend", dumps=dumps
 )
