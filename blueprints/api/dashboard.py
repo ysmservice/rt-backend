@@ -1,6 +1,6 @@
 # RT.Blueprints.API - Dashboard
 
-from typing import TypedDict, Literal, Union, Dict, List
+from typing import TypedDict, Literal, Union, Dict, Tuple, List
 
 from backend import TypedBlueprint, TypedSanic, exceptions, Request, WebSocket
 from backend.utils import (
@@ -16,10 +16,8 @@ DEFAULT_TIMEOUT = 8
 class CommandData(TypedDict):
     help: str
     headding: Union[Dict[Literal["ja", "en"], str], None]
-    kwargs: Dict[str, List[str]]
-    category: str
+    kwargs: Dict[str, Tuple[List[str], str, bool]]
     sub_category: str
-    mode: Literal["user", "guild", "channel"]
 
 
 class Datas(TypedDict):
@@ -58,7 +56,7 @@ def on_load(app: TypedSanic):
         return api("ok", None)
 
 
-    @bp.get("/command/get/<category>")
+    @bp.get("/commands/get/<category>")
     @cooldown(bp, 0.5)
     async def get_settings(request: Request, category: str):
         "設定一覧を返すRouteですl"
@@ -68,6 +66,7 @@ def on_load(app: TypedSanic):
 
 
     @bp.websocket("/websocket")
+    @is_okip(bp)
     class SettingsWebSocket(WebSocket):
         "何かダッシュボードからの設定がされた際にBotに伝えるためのWebSocket通信をするクラスです。"
 
