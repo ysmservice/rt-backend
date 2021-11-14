@@ -36,7 +36,7 @@ def on_setup(bot: TypedBot) -> None:
 app = NewSanic(
     (), dict(
         command_prefix=PREFIX, intents=Intents(
-            mesages=True
+            messages=True
         ), max_messages=100,
         allowed_mentions=AllowedMentions.none(), activity=Game("Backend")
     ), secret["token"], True, on_setup, (), secret["mysql"], TEMPLATE_EXTS,
