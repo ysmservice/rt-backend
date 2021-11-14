@@ -104,7 +104,7 @@ def NewSanic(
     @cooldown(app.ctx, 0.3, from_path=True, wrap_html=True)
     async def on_request(request: Request):
         if not app.ctx.test and request.host.startswith("146.59.153.178"):
-            if "api" not in request.path or not is_bot_ip(request):
+            if "api" not in request.path or not await is_bot_ip(request):
                 return wrap_html(
                     request, SanicException("生IPアドレスへのアクセスは禁じられています。", 403)
                 )
