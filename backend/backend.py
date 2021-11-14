@@ -74,31 +74,33 @@ def NewSanic(
 
     @app.listener("before_server_start")
     async def prepare(app: TypedSanic, loop: AbstractEventLoop):
-        # データベースのプールの準備をする。
-        pool_kwargs["loop"] = loop
-        app.ctx.pool = await create_pool(*pool_args, **pool_kwargs)
-        # Discordのデバッグ用のBotの準備をする。
-        bot_kwargs["loop"] = loop
-        app.ctx.bot = TypedBot(*bot_args, **bot_kwargs)
-        app.ctx.bot.app = app
-        app.ctx.bot.pool = app.ctx.pool
-        # Botの準備をさせてBotを動かす。
-        on_setup_bot(app.ctx.bot)
-        loop.create_task(app.ctx.bot.start(token, reconnect=reconnect))
-        await app.ctx.bot.wait_until_ready()
-        logger.info("Connected to Discord")
-        app.ctx.bot.dispatch("on_loop_ready", app)
-        # データベースなどの準備用の関数達を実行する。
-        for task in app.ctx.tasks:
-            task(app)
-        del app.ctx.tasks
+        if not hasattr(app.ctx, "bot"):
+            # データベースのプールの準備をする。
+            pool_kwargs["loop"] = loop
+            app.ctx.pool = await create_pool(*pool_args, **pool_kwargs)
+            # Discordのデバッグ用のBotの準備をする。
+            bot_kwargs["loop"] = loop
+            app.ctx.bot = TypedBot(*bot_args, **bot_kwargs)
+            app.ctx.bot.app = app
+            app.ctx.bot.pool = app.ctx.pool
+            # Botの準備をさせてBotを動かす。
+            on_setup_bot(app.ctx.bot)
+            loop.create_task(app.ctx.bot.start(token, reconnect=reconnect))
+            await app.ctx.bot.wait_until_ready()
+            logger.info("Connected to Discord")
+            app.ctx.bot.dispatch("on_loop_ready", app)
+            # データベースなどの準備用の関数達を実行する。
+            for task in app.ctx.tasks:
+                task(app)
+            del app.ctx.tasks
 
     @app.listener("after_server_stop")
     async def close(app: TypedSanic, _: AbstractEventLoop):
         # プールとBotを閉じる。
-        app.ctx.bot.dispatch("close")
-        app.ctx.pool.close()
-        await app.ctx.bot.close()
+        if not app.ctx.bot.is_cloesd():
+            app.ctx.bot.dispatch("close")
+            app.ctx.pool.close()
+            await app.ctx.bot.close()
 
     @app.middleware
     @cooldown(app.ctx, 0.3, from_path=True, wrap_html=True)
