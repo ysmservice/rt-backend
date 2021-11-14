@@ -27,7 +27,7 @@ from traceback import format_exc
 from sys import argv
 
 from .typed import Datas, TypedSanic, TypedBot, TypedBlueprint, Packet, PacketData, Self
-from .utils import cooldown, wrap_html, DEFAULT_GET_REMOTE_ADDR
+from .utils import cooldown, wrap_html, DEFAULT_GET_REMOTE_ADDR, is_bot_ip
 from .oauth import DiscordOAuth
 
 
@@ -103,11 +103,11 @@ def NewSanic(
     @app.middleware
     @cooldown(app.ctx, 0.3, from_path=True, wrap_html=True)
     async def on_request(request: Request):
-        if (not app.ctx.test and request.host.startswith("146.59.153.178")
-                and request.scheme not in ("ws", "wss")):
-            return wrap_html(
-                request, SanicException("生IPアドレスへのアクセスは禁じられています。", 403)
-            )
+        if not app.ctx.test and request.host.startswith("146.59.153.178"):
+            if "api" not in request.path or not is_bot_ip(request):
+                return wrap_html(
+                    request, SanicException("生IPアドレスへのアクセスは禁じられています。", 403)
+                )
         if DEFAULT_GET_REMOTE_ADDR(request) in ipbans:
             return wrap_html(
                 request, SanicException("あなたはこのウェブサイトにアクセスすることができません。", 401)
