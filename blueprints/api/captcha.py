@@ -46,7 +46,7 @@ def on_load(app: TypedSanic):
             }
         )
 
-    @bp.websocket("/captcha")
+    @bp.websocket("/")
     @is_okip(bp)
     class CaptchaWebSocket(WebSocket):
 
