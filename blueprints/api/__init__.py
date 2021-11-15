@@ -7,6 +7,7 @@ from backend.utils import api
 
 from .dashboard import bp as dashboard_bp, on_load as dashboard_on_load
 from .captcha import bp as captcha_bp, on_load as captcha_on_load
+from .guild import bp as guild_bp, on_load as guild_on_load
 from .oauth import bp as oauthbp, on_load as oauth_on_load
 from .news import bp as newsbp, on_load as news_on_load
 from .tts import bp as ttsbp, on_load as tts_on_load
@@ -18,10 +19,11 @@ from .help import bp as helpbp
 
 blueprints = (
     testbp, helpbp, short_url_bp, newsbp, ttsbp, oauthbp, captcha_bp, repryptbp,
-    dashboard_bp
+    dashboard_bp, guild_bp
 )
 on_loads = (
-    news_on_load, tts_on_load, oauth_on_load, captcha_on_load, dashboard_on_load
+    news_on_load, tts_on_load, oauth_on_load, captcha_on_load, dashboard_on_load,
+    guild_on_load
 )
 bp = TypedBlueprint.group(*blueprints, url_prefix="/api")
 
@@ -39,7 +41,7 @@ async def on_error(request: Request, exception: Exception):
     status = 200
     if isinstance(exception, SanicException):
         status = exception.status_code
-        res = api(exception.message, None, exception.status_code)
+        res = api(str(exception), None, exception.status_code)
     else:
         status = 500
         res = api(str(exception), None, 500)

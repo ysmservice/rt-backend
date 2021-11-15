@@ -101,7 +101,7 @@ def NewSanic(
         await app.ctx.bot.close()
 
     @app.middleware
-    @cooldown(app.ctx, 0.3, from_path=True, wrap_html=True)
+    @cooldown(app.ctx, 0.1, from_path=True, wrap_html=True)
     async def on_request(request: Request):
         if not app.ctx.test and request.host.startswith("146.59.153.178"):
             if "api" not in request.path or not await is_bot_ip(request):
@@ -122,10 +122,10 @@ def NewSanic(
         else:
             path = "/"
         real_path = f"{template_folder}{path}"
-        if await aioisdir(real_path[:-1]):
+        if await aioisdir(real_path):
             # もしフォルダならindex.htmlを付け足す。
-            real_path += "index.html"
-            path += "index.html"
+            real_path += "/index.html"
+            path += "/index.html"
 
         # もしファイルが存在するならそのファイルを返す。
         if await aioexists(real_path) and await aioisfile(real_path):

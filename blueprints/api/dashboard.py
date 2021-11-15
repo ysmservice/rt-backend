@@ -6,6 +6,7 @@ from backend import TypedBlueprint, TypedSanic, exceptions, Request, WebSocket
 from backend.utils import (
     DataEvent, api, cooldown, is_okip, try_loads, DEFAULT_GET_REMOTE_ADDR
 )
+from discord.ext import tasks
 
 import asyncio
 
@@ -16,17 +17,18 @@ DEFAULT_TIMEOUT = 8
 class CommandData(TypedDict):
     help: str
     headding: Union[Dict[Literal["ja", "en"], str], None]
-    kwargs: Dict[str, Tuple[List[str], str, bool]]
+    kwargs: Dict[str, Tuple[Union[str, bool, int, float, List[str]], str, bool]]
+    display_name: str
+    require_channel: bool
     sub_category: str
 
 
 class Datas(TypedDict):
     user: Dict[str, CommandData]
     guild: Dict[str, CommandData]
-    channel: Dict[str, CommandData]
 
 
-class CommandRunData(TypedDict):
+class CommandRunData(TypedDict, total=False):
     command: str
     kwargs: Dict[str, str]
     guild_id: Union[int, Literal[0]]
@@ -65,6 +67,22 @@ def on_load(app: TypedSanic):
         raise exceptions.SanicException("そのカテゴリーが見つかりませんでした。", 400)
 
 
+    @bp.get("/guilds")
+    @app.ctx.oauth.require_login(True)
+    async def get_guilds(request: app.ctx.oauth.TypedRequest):
+        "サーバー一覧を取得するためのエンドポイントです。"
+        if request.ctx.user:
+            return api(
+                "ok", await request.app.ctx.fetch_guilds(
+                    request.ctx.user.id
+                )
+            )
+        else:
+            raise exceptions.Forbidden(
+                "あなたはログインしていないのでこのエンドポイントを使用することができません。"
+            )
+
+
     @bp.websocket("/websocket")
     @is_okip(bp)
     class SettingsWebSocket(WebSocket):
@@ -73,12 +91,13 @@ def on_load(app: TypedSanic):
         async def on_ready(self, _):
             while self.running == "ok" and not bp.queues:
                 await asyncio.sleep(0.01)
-            for ip, event in list(bp.queues.items()):
-                await self.send("on_post", event.data)
-                await self.recv()
-                bp.doing[ip] = event
-                del bp.queues[ip]
-            await self.send("on_posted")
+            else:
+                for ip, event in list(bp.queues.items()):
+                    await self.send("on_post", event.data)
+                    await self.recv()
+                    bp.doing[ip] = event
+                    del bp.queues[ip]
+                await self.send("on_posted")
 
 
     @bp.post("/reply/<ip>")
@@ -96,7 +115,7 @@ def on_load(app: TypedSanic):
             raise exceptions.NotFound("その返信先が見つかりませんでした。")
 
 
-    @bp.post("/set")
+    @bp.post("/update")
     @cooldown(bp, 0.5)
     @app.ctx.oauth.require_login(True)
     async def setting(request: app.ctx.oauth.TypedRequest):
@@ -111,12 +130,23 @@ def on_load(app: TypedSanic):
                 event = bp.queues[ip] = DataEvent(
                     loop=request.app.loop
                 )
-                event.data = try_loads(request)
+                try:
+                    event.data = try_loads(request)
+                except Exception as e:
+                    event.set("error")
+                    if ip in bp.doing:
+                        del bp.doing[ip]
+                    raise e
                 event.data["ip"] = DEFAULT_GET_REMOTE_ADDR(request)
+                data = await asyncio.wait_for(
+                    event.wait(), timeout=DEFAULT_TIMEOUT
+                )
+                if data["status"] != 200:
+                    if ip in bp.doing:
+                        event.set("error")
+                        del bp.doing[ip]
                 return api(
-                    "ok", await asyncio.wait_for(
-                        event.wait(), timeout=DEFAULT_TIMEOUT
-                    )
+                    "ok", data
                 )
         else:
             raise exceptions.SanicException(

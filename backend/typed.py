@@ -1,7 +1,8 @@
 # RT.Backend - Typed
 
 from typing import (
-    TYPE_CHECKING, TypedDict, Callable, Coroutine, Union, Any, Dict, List
+    TYPE_CHECKING, TypedDict, Callable, Coroutine, Literal,
+    Optional, Union, Any, Dict, List
 )
 from types import SimpleNamespace
 
@@ -19,6 +20,19 @@ class Datas(TypedDict):
     ShortURL: Dict[str, str]
 
 
+class DiscordObjectData(TypedDict):
+    name: str
+    id: int
+ChannelData = type("ChannelData", (DiscordObjectData,), {})
+
+
+class GuildData(TypedDict):
+    text_channels: List[DiscordObjectData]
+    voice_channels: List[DiscordObjectData]
+    channels: List[DiscordObjectData]
+    icon_url: str
+
+
 class TypedContext(SimpleNamespace):
     pool: Pool
     bot: "TypedBot"
@@ -27,10 +41,19 @@ class TypedContext(SimpleNamespace):
     datas: Datas
     tasks: List[Callable]
     oauth: "DiscordOAuth"
+    languages: Dict[int, str]
 
     def template(
         self, path: str, keys: dict = {}, **kwargs
     ) -> response.BaseHTTPResponse:
+        ...
+
+    def get_language(self, user_id: int) -> str:
+        ...
+
+    async def fetch_guilds(
+        self, user_id: int
+    ) -> Optional[List[GuildData]]:
         ...
 
 
