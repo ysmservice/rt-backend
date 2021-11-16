@@ -2,16 +2,14 @@
 
 from typing import TypedDict, Literal, Union, Dict, Tuple, List
 
-from backend import TypedBlueprint, TypedSanic, exceptions, Request, WebSocket
+from backend import (
+    TypedBlueprint, TypedSanic, exceptions, Request, WebSocket, logger
+)
 from backend.utils import (
     DataEvent, api, cooldown, is_okip, try_loads, DEFAULT_GET_REMOTE_ADDR
 )
-from discord.ext import tasks
 
 import asyncio
-
-
-DEFAULT_TIMEOUT = 8
 
 
 class CommandData(TypedDict):
@@ -94,10 +92,17 @@ def on_load(app: TypedSanic):
             else:
                 for ip, event in list(bp.queues.items()):
                     await self.send("on_post", event.data)
-                    await self.recv()
-                    bp.doing[ip] = event
-                    del bp.queues[ip]
-                await self.send("on_posted")
+                    try:
+                        await asyncio.wait_for(self.recv(), timeout=1.5)
+                    except asyncio.TimeoutError:
+                        logger.warn(f"Timeout setting websocket on receiving : {event.data}")
+                        if ip in bp.doing:
+                            del bp.doing[ip]
+                    else:
+                        bp.doing[ip] = event
+                    finally:
+                        del bp.queues[ip]
+                await self.send("on_posted", "")
 
 
     @bp.post("/reply/<ip>")
@@ -127,27 +132,36 @@ def on_load(app: TypedSanic):
                     "現在別で設定変更の処理を実行しているためこの処理を実行できません。", 423
                 )
             else:
-                event = bp.queues[ip] = DataEvent(
+                event = DataEvent(
                     loop=request.app.loop
                 )
                 try:
                     event.data = try_loads(request)
                 except Exception as e:
                     event.set("error")
-                    if ip in bp.doing:
-                        del bp.doing[ip]
                     raise e
-                event.data["ip"] = DEFAULT_GET_REMOTE_ADDR(request)
-                data = await asyncio.wait_for(
-                    event.wait(), timeout=DEFAULT_TIMEOUT
-                )
-                if data["status"] != 200:
-                    if ip in bp.doing:
-                        event.set("error")
-                        del bp.doing[ip]
-                return api(
-                    "ok", data
-                )
+                if all(key in event.data for key in CommandData.__annotations__):
+                    bp.queues[ip] = event
+                    event.data["ip"] = ip
+                    try:
+                        data = await asyncio.wait_for(
+                            event.wait(), timeout=8
+                        )
+                    except asyncio.TimeoutError:
+                        if ip in bp.doing:
+                            del bp.doing[ip]
+                        if ip in bp.queues:
+                            del bp.queues[ip]
+                        raise exceptions.RequestTimeout(
+                            "タイムアウトしました。"
+                        )
+                    else:
+                        return api("ok", data)
+                else:
+                    # もし必要なデータがないのならエラーを起こす。
+                    raise exceptions.SanicException(
+                        "必要なデータが不足しています。"
+                    )
         else:
             raise exceptions.SanicException(
                 "このAPIを使用するにはログインをしている必要があります。", 403

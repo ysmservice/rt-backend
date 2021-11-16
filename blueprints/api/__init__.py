@@ -5,6 +5,8 @@ from sanic.exceptions import SanicException
 from backend import TypedSanic, TypedBlueprint, Request, logger
 from backend.utils import api
 
+from traceback import print_exc
+
 from .dashboard import bp as dashboard_bp, on_load as dashboard_on_load
 from .captcha import bp as captcha_bp, on_load as captcha_on_load
 from .guild import bp as guild_bp, on_load as guild_on_load
@@ -45,6 +47,8 @@ async def on_error(request: Request, exception: Exception):
     else:
         status = 500
         res = api(str(exception), None, 500)
+        if request.app.ctx.test:
+            print_exc()
 
     if status in (500, 501):
         # もし内部エラーが発生したのならログを出力しておく。
