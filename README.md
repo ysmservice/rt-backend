@@ -7,7 +7,7 @@ DiscordのBotであるRTのバックエンドです。
 
 ## Installation
 ### 環境
-バージョン3.8以上ののPythonとMySQLまたはMariaDBが必要です。
+バージョン3.8以上のPythonとMySQLまたはMariaDBが必要です。
 ### 必要なモジュールのインストール
 `pip install -r requirements.txt`
 ### 必要な極秘情報ファイルの用意
