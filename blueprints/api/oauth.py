@@ -16,6 +16,7 @@ def on_load(app: TypedSanic):
         data = {"login": bool(request.ctx.user)}
         if data["login"]:
             data["user_name"] = str(request.ctx.user)
+            data["id"] = request.ctx.user.id
             data["language"] = app.ctx.get_language(request.ctx.user.id)
             data["icon"] = getattr(
                 request.ctx.user.avatar, "url",

@@ -29,10 +29,10 @@ class Datas(TypedDict):
 class CommandRunData(TypedDict, total=False):
     command: str
     kwargs: Dict[str, str]
+    category: str
     guild_id: Union[int, Literal[0]]
     user_id: int
     channel_id: Union[int, Literal[0]]
-    ip: str
 
 
 class NewTypedBlueprint(TypedBlueprint):
@@ -140,7 +140,9 @@ def on_load(app: TypedSanic):
                 except Exception as e:
                     event.set("error")
                     raise e
-                if all(key in event.data for key in CommandData.__annotations__):
+                if all(
+                    key in event.data for key in CommandRunData.__annotations__
+                ):
                     bp.queues[ip] = event
                     event.data["ip"] = ip
                     try:
@@ -160,7 +162,7 @@ def on_load(app: TypedSanic):
                 else:
                     # もし必要なデータがないのならエラーを起こす。
                     raise exceptions.SanicException(
-                        "必要なデータが不足しています。"
+                        "必要なデータが不足しています。", 500
                     )
         else:
             raise exceptions.SanicException(
