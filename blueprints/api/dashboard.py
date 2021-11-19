@@ -109,15 +109,15 @@ def on_load(app: TypedSanic):
     @is_okip(bp)
     async def setting_reply(request: Request, ip: str):
         "返信内容をBotから受け取るためのRouteです。"
-        data = try_loads(request)
+        data = try_loads(request)["data"]
         if isinstance(data, dict):
             data = f"# {data['title']}\n{data['description']}"
-        if ip in bp.queues:
+        if ip in bp.doing:
             bp.doing[ip].set(data)
-            del bp.queues
+            del bp.doing[ip]
             return api("ok", None)
         else:
-            raise exceptions.NotFound("その返信先が見つかりませんでした。")
+            raise exceptions.SanicException("その返信先が見つかりませんでした。", 400)
 
 
     @bp.post("/update")
