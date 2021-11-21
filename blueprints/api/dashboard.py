@@ -17,7 +17,6 @@ class CommandData(TypedDict):
     headding: Union[Dict[Literal["ja", "en"], str], None]
     kwargs: Dict[str, Tuple[Union[str, bool, int, float, List[str]], str, bool]]
     display_name: str
-    require_channel: bool
     sub_category: str
 
 
@@ -32,7 +31,6 @@ class CommandRunData(TypedDict, total=False):
     category: str
     guild_id: Union[int, Literal[0]]
     user_id: int
-    channel_id: Union[int, Literal[0]]
 
 
 class NewTypedBlueprint(TypedBlueprint):
@@ -132,9 +130,7 @@ def on_load(app: TypedSanic):
                     "現在別で設定変更の処理を実行しているためこの処理を実行できません。", 423
                 )
             else:
-                event = DataEvent(
-                    loop=request.app.loop
-                )
+                event = DataEvent(loop=request.app.loop)
                 try:
                     event.data = try_loads(request)
                 except Exception as e:
