@@ -160,7 +160,7 @@ class DiscordOAuth:
         # 既に同じIPアドレスのキャッシュがあるなら削除する。
         for state, (tentative, _) in list(self.state_cache.items()):
             if tentative == ip:
-                self.state_cache[ip]
+                self.state_cache[tentative]
                 break
         # stateを作成する。
         self.state_cache[(state := reprypt.encrypt(
