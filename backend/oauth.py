@@ -19,6 +19,7 @@ import reprypt
 import aiohttp
 
 from .typed import TypedSanic, TypedBot, CoroutineFunction
+from .utils import DEFAULT_GET_REMOTE_ADDR
 from .backend import Request
 
 
@@ -155,17 +156,17 @@ class DiscordOAuth:
 
     def state_generator(self, request: Request, timeout: float = 300.0) -> str:
         "`require_login`の引数`state_generator`のデフォルトです。"
-        now = time()
+        now, ip = time(), DEFAULT_GET_REMOTE_ADDR(request)
         # 既に同じIPアドレスのキャッシュがあるなら削除する。
-        for state, (ip, _) in list(self.state_cache.items()):
-            if ip == request.ip:
-                self.state_cache[ip]
+        for state, (tentative, _) in list(self.state_cache.items()):
+            if tentative == ip:
+                self.state_cache[tentative]
                 break
         # stateを作成する。
         self.state_cache[(state := reprypt.encrypt(
-            f"{request.host}{request.ip}{now}", self.secret_key,
+            f"{request.host}{ip}{now}", self.secret_key,
             converter=reprypt.convert_hex
-        ))] = (request.ip, now + timeout)
+        ))] = (ip, now + timeout)
         return state
 
     state_generator.default = True
@@ -179,9 +180,10 @@ class DiscordOAuth:
         except reprypt.DecryptError:
             bool_ = False
         else:
+            ip = DEFAULT_GET_REMOTE_ADDR(request)
             bool_ = (
-                self.state_cache.get(state, ("",))[0] == request.ip
-                and decrypted_state.startswith(f"{request.host}{request.ip}")
+                self.state_cache.get(state, ("",))[0] == ip
+                and decrypted_state.startswith(f"{request.host}{ip}")
             )
             del self.state_cache[state]
         finally:
