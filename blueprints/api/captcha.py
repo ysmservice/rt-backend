@@ -66,6 +66,8 @@ def on_load(app: TypedSanic):
                     await sleep(0.01)
                 else:
                     break
+            else:
+                return
             await self.send("on_success", str(user_id))
 
     CaptchaWebSocket.app = app
