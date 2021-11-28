@@ -154,7 +154,7 @@ def on_load(app: TypedSanic):
                             "タイムアウトしました。"
                         )
                     else:
-                        return api("ok", data)
+                        return api("ok", data, ensure_ascii=False)
                 else:
                     # もし必要なデータがないのならエラーを起こす。
                     raise exceptions.SanicException(

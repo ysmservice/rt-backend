@@ -8,9 +8,9 @@ from sanic import response, request, exceptions
 from sanic.errorpages import HTMLRenderer
 
 from jishaku.functools import executor_function
+from functools import wraps, partial
 from socket import gethostbyname
 from ujson import loads, dumps
-from functools import wraps
 from asyncio import Event
 from time import time
 
@@ -55,10 +55,10 @@ async def is_bot_ip(request: "Request") -> bool:
 
 def api(
     message: str, data: Union[int, str, list, dict, None],
-    status: int = 200, **kwargs
+    status: int = 200, ensure_ascii: bool = True, **kwargs
 ) -> response.HTTPResponse:
     "API用のレスポンスを返します。"
-    kwargs["dumps"] = dumps
+    kwargs["dumps"] = partial(dumps, ensure_ascii=ensure_ascii)
     kwargs["status"] = status
     return response.json(
         {
