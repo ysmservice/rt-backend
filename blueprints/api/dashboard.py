@@ -109,7 +109,12 @@ def on_load(app: TypedSanic):
         "返信内容をBotから受け取るためのRouteです。"
         data = try_loads(request)["data"]
         if isinstance(data, dict):
-            data = f"# {data['title']}\n{data['description']}"
+            content = f"# {data['title']}\n{data.get('description', '')}"
+            for field in data.get("fields", ()):
+                content += f"\n## {field['name']}\n{field['value']}"
+            if "footer" in data:
+                content += f"\n* * *\n{data['footer'].get('text')}"
+            data = content
         if ip in bp.doing:
             bp.doing[ip].set(data)
             del bp.doing[ip]
