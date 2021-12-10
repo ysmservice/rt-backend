@@ -117,7 +117,7 @@ class CoolDown:
     func: Callable[..., Coroutine]
 
     def __new__(
-        cls, rate: int, per: float, message: str = DEFAULT_COOLDOWN,
+        cls, rate: int, per: float, message: str = DEFAULT_COOLDOWN, wrap_html: bool = False,
         cache_max: int = 1000, strict: bool = True, max_per: Optional[float] = None,
         get_remote_address: Callable[[request.Request], str] = DEFAULT_GET_REMOTE_ADDR
     ) -> Callable[[Callable[..., Coroutine]], "CoolDown"]:
@@ -125,7 +125,7 @@ class CoolDown:
         self.rate, self.per, self.strict = rate, per, strict
         self.cache_max, self.message = cache_max, message
         self.max_per = max_per or per * cache_max // 100
-        self.cache = {}
+        self.cache, self.wrap_html = {}, wrap_html
         self.get_remote_address = get_remote_address
 
         def decorator(func):
@@ -144,9 +144,13 @@ class CoolDown:
             if self.cache[ip][0] > self.rate:
                 if self.strict and self.cache[ip][1] < self.max_per:
                     self.cache[ip][1] += self.per
-                raise exceptions.SanicException(
+                e = exceptions.SanicException(
                     self.message.format(self.cache[ip][1] - now), 429
                 )
+                if self.wrap_html:
+                    return HTMLRenderer(request, e, True).full()
+                else:
+                    raise e
         else:
             del self.cache[ip]
         return await self.func(request, *args, **kwargs)
@@ -162,7 +166,12 @@ class CoolDown:
 def cooldown(
     bp: Any, seconds: Union[int, float], message: Optional[str] = None,
     cache_max: int = 1000, from_path: bool = False, wrap_html: bool = False,
-    get_remote_address: Callable[[request.Request], str] = DEFAULT_GET_REMOTE_ADDR,
     **kwargs
 ) -> CoolDown:
-    return CoolDown(1, seconds, message, cache_max, **kwargs)
+    if from_path:
+        kwargs["get_remote_address"] = lambda request: \
+            f"{DEFAULT_GET_REMOTE_ADDR(request)}-{request.path}"
+    message = message or DEFAULT_COOLDOWN
+    return CoolDown(
+        1, seconds, message, wrap_html=wrap_html, cache_max=cache_max, **kwargs
+    )
