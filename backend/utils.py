@@ -89,50 +89,6 @@ DEFAULT_GET_REMOTE_ADDR = lambda request: (
 )
 
 
-def cooldown(
-    bp: "TypedBlueprint", seconds: Union[int, float], message: Optional[str] = None,
-    cache_max: int = 1000, from_path: bool = False, wrap_html: bool = False,
-    get_remote_address: Callable[[request.Request], str] = DEFAULT_GET_REMOTE_ADDR
-) -> Callable:
-    "レートリミットを設定します。"
-    message = message or DEFAULT_COOLDOWN
-    def decorator(function):
-        @wraps(function)
-        async def new(request, *args, **kwargs):
-            ip = get_remote_address(request)
-            if from_path:
-                name = request.path
-            else:
-                name = function.__name__
-            if not hasattr(bp, "_rtlib_cooldown"):
-                bp._rtlib_cooldown = {}
-            before = bp._rtlib_cooldown.get(
-                name, {}
-            ).get(ip, 0)
-            now = time()
-            if name not in bp._rtlib_cooldown:
-                bp._rtlib_cooldown[name] = {}
-            bp._rtlib_cooldown[name][ip] = now
-            if len(bp._rtlib_cooldown[name]) >= cache_max:
-                del bp._rtlib_cooldown[name] \
-                    [sorted(
-                        bp._rtlib_cooldown[name].items(),
-                        key=lambda x: x[1]
-                    )[0][0]]
-            if now - before < seconds:
-                e = exceptions.SanicException(
-                    message.format(seconds), 429
-                )
-                if wrap_html:
-                    return HTMLRenderer(request, e, True).full()
-                else:
-                    raise e
-            else:
-                return await function(request, *args, **kwargs)
-        return new
-    return decorator
-
-
 class DataEvent(Event):
     data: Any = None
 
@@ -201,3 +157,12 @@ class CoolDown:
             del self.cache[max(list(self.cache.items()), key=lambda _, d: d[1])[0]]
         # 非同期で実行できるようにコルーチン関数を返す。
         return self._async_call(request, *args, **kwargs)
+
+
+def cooldown(
+    bp: Any, seconds: Union[int, float], message: Optional[str] = None,
+    cache_max: int = 1000, from_path: bool = False, wrap_html: bool = False,
+    get_remote_address: Callable[[request.Request], str] = DEFAULT_GET_REMOTE_ADDR,
+    **kwargs
+) -> CoolDown:
+    return CoolDown(1, seconds, message, cache_max, **kwargs)
