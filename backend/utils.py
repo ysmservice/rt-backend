@@ -158,7 +158,7 @@ class CoolDown:
     def __call__(self, request: request.Request, *args, **kwargs):
         # もしキャッシュが最大数になったのならcacheで一番古いものを削除する。
         if len(self.cache) >= self.cache_max:
-            del self.cache[max(list(self.cache.items()), key=lambda _, d: d[1])[0]]
+            del self.cache[max(list(self.cache.items()), key=lambda d: d[1][1])[0]]
         # 非同期で実行できるようにコルーチン関数を返す。
         return self._async_call(request, *args, **kwargs)
 
