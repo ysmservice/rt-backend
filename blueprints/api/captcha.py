@@ -38,7 +38,7 @@ def on_load(app: TypedSanic):
     async def captcha_end(request: Request):
         if request.ctx.success:
             # もし認証が成功したのならキューにユーザーIDを追加する。
-            await queue.put(request.ctx.data["user_id"])
+            await captcha.queue.put(request.ctx.data["user_id"])
         return await app.ctx.template(
             "captcha_result.html", keys={
                 "result": "認証に成功しました！" if request.ctx.success \
@@ -53,9 +53,8 @@ def on_load(app: TypedSanic):
         first = True
 
         async def on_ready(self, _):
-            if self.first:
-                global queue
-                queue = Queue()
+            if not hasattr(captcha, "queue"):
+                captcha.queue = queue = Queue()
                 self.first = False
 
             # ユーザーが認証を通ったのならBotに認証が成功したことを伝える。

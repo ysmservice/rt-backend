@@ -47,11 +47,10 @@ async def on_error(request: Request, exception: Exception):
     else:
         status = 500
         res = api(str(exception), None, 500)
-        if request.app.ctx.test:
-            print_exc()
 
     if status in (500, 501):
         # もし内部エラーが発生したのならログを出力しておく。
+        print_exc()
         logger.error(f"Error on {request.path} : {exception}")
 
     return res
