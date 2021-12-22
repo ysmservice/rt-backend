@@ -3,8 +3,10 @@
 from backend import TypedSanic, TypedBlueprint, Request, hCaptcha
 from backend.utils import CoolDown, is_okip, api
 
-from aiofiles.os import remove as aioremove
+from aiofiles.os import remove as aioremove, wrap
 from aiofiles import open as aioopen
+from os.path import exists
+
 from reprypt import decrypt
 from time import time
 
@@ -14,6 +16,7 @@ from data import TEMPLATE_FOLDER
 bp = TypedBlueprint("API.Captcha", "captcha")
 TIMEOUT = 300
 COOLDOWN = "クールダウン中です。{}秒後にもう一度お試しください。"
+aioexists = wrap(exists)
 
 
 def on_load(app: TypedSanic):
@@ -54,5 +57,6 @@ def on_load(app: TypedSanic):
     @bp.post("/image/delete")
     @is_okip(bp)
     async def captcha_image_delete(request: Request):
-        await aioremove(f"{TEMPLATE_FOLDER}/{request.body.decode()}")
+        if await aioexists(path := f"{TEMPLATE_FOLDER}/{request.body.decode()}"):
+            await aioremove(path)
         return api("Ok", None)
