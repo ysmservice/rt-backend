@@ -1,12 +1,14 @@
 # RT.Blueprints.API - Captcha
 
-from backend import (
-    TypedSanic, TypedBlueprint, Request, WebSocket, hCaptcha
-)
-from backend.utils import CoolDown, is_okip
+from backend import TypedSanic, TypedBlueprint, Request, hCaptcha
+from backend.utils import CoolDown, is_okip, api
 
-from asyncio import Queue, QueueEmpty, sleep
+from aiofiles.os import remove as aioremove
+from aiofiles import open as aioopen
+from reprypt import decrypt
 from time import time
+
+from data import TEMPLATE_FOLDER
 
 
 bp = TypedBlueprint("API.Captcha", "captcha")
@@ -27,46 +29,30 @@ def on_load(app: TypedSanic):
     @app.ctx.oauth.require_login()
     async def captcha_first(request: Request):
         return await captcha.start(
-            "userdata", {
-                "user_id": request.ctx.user.id, "timeout": time() + TIMEOUT
-            }, redirect_url="/captcha/end"
+            "session", request.args.get("session"), redirect_url="/captcha/end"
         )
 
     @app.route("/captcha/end", methods=["POST"])
     @CoolDown(2, 10, COOLDOWN)
     @captcha.end(check=lambda data: data["timeout"] > time())
     async def captcha_end(request: Request):
-        if request.ctx.success:
-            # もし認証が成功したのならキューにユーザーIDを追加する。
-            await captcha.queue.put(request.ctx.data["user_id"])
         return await app.ctx.template(
             "captcha_result.html", keys={
-                "result": "認証に成功しました！" if request.ctx.success \
-                    else "認証に失敗しました。もう一度五秒後に挑戦してください。"
+                "result": "認証に成功しました。以下のコードをDiscordで選択してください。"
+                    f"<br><code>{decrypt(request.ctx.data, app.ctx.secret['normal_secret_key'])}</code>"
+                    if request.ctx.success else "認証に失敗しました。もう一度五秒後に挑戦してください。"
             }
         )
 
-    @bp.websocket("/")
+    @bp.post("/image/post")
     @is_okip(bp)
-    class CaptchaWebSocket(WebSocket):
+    async def captcha_image_post(request: Request):
+        async with aioopen(f"{TEMPLATE_FOLDER}/{app.ctx}") as f:
+            await f.write(request.body)
+        return api("Ok", None, 201)
 
-        first = True
-
-        async def on_ready(self, _):
-            if not hasattr(captcha, "queue"):
-                captcha.queue = queue = Queue()
-                self.first = False
-
-            # ユーザーが認証を通ったのならBotに認証が成功したことを伝える。
-            while self.running == "ok":
-                try:
-                    user_id = queue.get_nowait()
-                except QueueEmpty:
-                    await sleep(0.01)
-                else:
-                    break
-            else:
-                return
-            await self.send("on_success", str(user_id))
-
-    CaptchaWebSocket.app = app
+    @bp.post("/image/delete")
+    @is_okip(bp)
+    async def captcha_image_delete(request: Request):
+        await aioremove(f"{TEMPLATE_FOLDER}/{request.body.decode()}")
+        return api("Ok", None)

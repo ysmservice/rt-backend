@@ -1,5 +1,6 @@
 {
     "secret_key": "セッションの保存などに使うキー、なんでも良い。",
+    "normal_secret_key": "Captcha等で使う凡庸シークレットキー, Bot側の`secret`と一致している必要がある。",
     "token": "Jishakuによる動作確認用などのためのBotのTOKENです。",
     "mysql": {
         "host": "localhost", "port": 3306,
