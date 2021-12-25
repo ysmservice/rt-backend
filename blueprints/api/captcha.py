@@ -6,7 +6,9 @@ from backend.utils import CoolDown, is_okip, api
 from aiofiles.os import remove as aioremove, wrap
 from aiofiles import open as aioopen
 from os.path import exists
+from os import listdir
 
+from urllib.parse import unquote
 from reprypt import decrypt
 from time import time
 
@@ -17,6 +19,7 @@ bp = TypedBlueprint("API.Captcha", "captcha")
 TIMEOUT = 300
 COOLDOWN = "クールダウン中です。{}秒後にもう一度お試しください。"
 aioexists = wrap(exists)
+aiolistdir = wrap(listdir)
 
 
 def on_load(app: TypedSanic):
@@ -29,10 +32,12 @@ def on_load(app: TypedSanic):
 
     @app.route("/captcha")
     @CoolDown(4, 10, COOLDOWN)
-    @app.ctx.oauth.require_login()
     async def captcha_first(request: Request):
         return await captcha.start(
-            "session", request.args.get("session"), redirect_url="/captcha/end"
+            "session", {
+                "data": unquote(request.args.get("session")),
+                "timeout": time() + 120
+            }, redirect_url="/captcha/end"
         )
 
     @app.route("/captcha/end", methods=["POST"])
@@ -42,16 +47,19 @@ def on_load(app: TypedSanic):
         return await app.ctx.template(
             "captcha_result.html", keys={
                 "result": "認証に成功しました。以下のコードをDiscordで選択してください。"
-                    f"<br><code>{decrypt(request.ctx.data, app.ctx.secret['normal_secret_key'])}</code>"
-                    if request.ctx.success else "認証に失敗しました。もう一度五秒後に挑戦してください。"
+                    if request.ctx.success else "認証に失敗しました。もう一度五秒後に挑戦してください。",
+                "code": decrypt(request.ctx.data["data"], app.ctx.secret["normal_secret_key"])
+                    if request.ctx.success else "Failed..."
             }
         )
 
     @bp.post("/image/post")
     @is_okip(bp)
     async def captcha_image_post(request: Request):
-        async with aioopen(f"{TEMPLATE_FOLDER}/{app.ctx}") as f:
-            await f.write(request.body)
+        async with aioopen(
+            f"{TEMPLATE_FOLDER}/{request.args.get('path')}", "wb"
+        ) as f:
+            await f.write(request.files["file"][0].body)
         return api("Ok", None, 201)
 
     @bp.post("/image/delete")
@@ -60,3 +68,9 @@ def on_load(app: TypedSanic):
         if await aioexists(path := f"{TEMPLATE_FOLDER}/{request.body.decode()}"):
             await aioremove(path)
         return api("Ok", None)
+
+    @app.signal("server.shutdown.before")
+    async def on_close(app, loop):
+        for filename in await aiolistdir(f"{TEMPLATE_FOLDER}/data/captcha"):
+            if filename.endswith(".png"):
+                await aioremove(f"{TEMPLATE_FOLDER}/data/captcha/{filename}")
