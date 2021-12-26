@@ -47,6 +47,8 @@ def is_okip(bp: "TypedBlueprint", okip: Optional[List[str]] = None) -> Callable[
 
 async def is_bot_ip(request: "Request") -> bool:
     global bot_ip
+    if request.ip == "127.0.0.1":
+        return True
     ip = DEFAULT_GET_REMOTE_ADDR(request)
     if ip != bot_ip:
         bot_ip = await get_ip("tasuren.f5.si")
