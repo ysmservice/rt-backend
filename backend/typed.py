@@ -14,6 +14,7 @@ from aiomysql import Pool
 
 if TYPE_CHECKING:
     from .oauth import DiscordOAuth
+    from .rtc import RTConnection
 
 
 class Datas(TypedDict):

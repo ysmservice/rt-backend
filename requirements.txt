@@ -8,4 +8,4 @@ aiofiles
 jishaku
 reprypt
 # Discord Web Manager
-py-cord
+nextcord

@@ -4,3 +4,4 @@ auth.json
 rt-frontend
 .*
 \#*\#
+rt_module
