@@ -28,6 +28,7 @@ from sys import argv
 
 from .typed import Datas, TypedSanic, TypedBot, TypedBlueprint, Packet, PacketData, Self
 from .utils import cooldown, wrap_html, DEFAULT_GET_REMOTE_ADDR, is_bot_ip
+from .rtc import on_load as rtc_on_load
 from .oauth import DiscordOAuth
 
 
@@ -147,6 +148,8 @@ def NewSanic(
             else:
                 logger.error(exception)
         return HTMLRenderer(request, exception, True).full()
+
+    rtc_on_load(app)
 
     return app
 
