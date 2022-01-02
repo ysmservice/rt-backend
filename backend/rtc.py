@@ -22,10 +22,10 @@ def on_load(app):
             request.app.ctx.rtc = self
             self.set_event(self._logger, "logger")
 
-        def __new__(cls, request: Request, *args, **kwargs):
+        def __new__(cls, request: Request, ws, *args, **kwargs):
             self = super().__new__(cls)
             self.__init__(request)
-            return self.communicate(*args, **kwargs)
+            return self.communicate(ws, True)
 
         def logger(
             self, mode: Union[Literal["info", "debug", "warn", "error"], str],
