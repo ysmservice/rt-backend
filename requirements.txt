@@ -1,7 +1,6 @@
 # Normal
 sanic
-jinja2
-flask-misaka
+miko-tpl
 ujson
 aiomysql
 aiofiles

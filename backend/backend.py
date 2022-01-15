@@ -4,8 +4,11 @@ from typing import (
     Any, Callable, Coroutine, Literal, Dict, Union, Optional, Sequence
 )
 
-from jinja2 import Environment, FileSystemLoader, select_autoescape
-from flask_misaka import Misaka
+from os.path import exists, isfile, isdir
+from inspect import iscoroutinefunction
+from asyncio import AbstractEventLoop
+from traceback import format_exc
+from sys import argv
 
 from sanic.exceptions import SanicException
 from sanic.errorpages import HTMLRenderer
@@ -13,18 +16,15 @@ from sanic.request import Request
 from sanic.log import logger
 from sanic import response
 
+from miko import Manager
+
 from websockets import (
     WebSocketServerProtocol, ConnectionClosedOK, ConnectionClosedError
 )
 from ujson import loads, dumps
 
 from jishaku.functools import executor_function
-from os.path import exists, isfile, isdir
-from inspect import iscoroutinefunction
-from asyncio import AbstractEventLoop
 from aiomysql import create_pool
-from traceback import format_exc
-from sys import argv
 
 from .typed import Datas, TypedSanic, TypedBot, TypedBlueprint, Packet, PacketData, Self
 from .utils import cooldown, wrap_html, DEFAULT_GET_REMOTE_ADDR, is_bot_ip
@@ -47,26 +47,20 @@ def NewSanic(
     app: TypedSanic = TypedSanic(*sanic_args, **sanic_kwargs)
 
     # テンプレートエンジンを用意する。
-    app.ctx.env = Environment(
-        loader=FileSystemLoader(template_folder),
-        autoescape=select_autoescape(template_engine_exts),
-        enable_async=True
-    )
-    app.ctx.env.filters.setdefault(
-        "markdown", Misaka(autolink=True)
-    )
-
-    async def template(path, keys={}, **kwargs):
-        return response.html(
-            await app.ctx.env.get_template(path).render_async(**keys), **kwargs
+    def layout(title, description, content, head="", **kwargs):
+        return app.ctx.env.render(
+            f"{template_folder}/layout.html", content=content,
+            head=f"""<title>{title}</title>
+            <meta name="description" content="{description}">
+            {head}""", **kwargs
         )
-    app.ctx.template = template
+    app.ctx.env = Manager(extends={"layout": layout})
+
     app.ctx.datas = {
         "ShortURL": {}
     }
     app.ctx.tasks = []
     app.ctx.test = argv[-1] != "production"
-    del template
 
     app.ctx.oauth = DiscordOAuth(app, **oauth_kwargs)
 
@@ -122,21 +116,22 @@ def NewSanic(
                 path = f"/{path}"
         else:
             path = "/"
-        real_path = f"{template_folder}{path}"
-        if await aioisdir(real_path):
+        path = f"{template_folder}{path}"
+        if await aioisdir(path):
             # もしフォルダならindex.htmlを付け足す。
-            real_path += "/index.html"
-            path += "/index.html"
+            if path[-1] != "/":
+                path += "/"
+            path += "index.html"
 
         # もしファイルが存在するならそのファイルを返す。
-        if await aioexists(real_path) and await aioisfile(real_path):
-            if real_path.endswith(template_engine_exts):
-                return await app.ctx.template(path[1:])
+        if await aioexists(path) and await aioisfile(path):
+            if path.endswith(template_engine_exts):
+                return response.html(await app.ctx.env.aiorender(path, eloop=app.loop))
             else:
-                if real_path.endswith((".mp4", ".mp3", ".wav", ".ogg", ".avi")):
-                    return await response.file_stream(real_path)
+                if path.endswith((".mp4", ".mp3", ".wav", ".ogg", ".avi")):
+                    return await response.file_stream(path)
                 else:
-                    return await response.file(real_path)
+                    return await response.file(path)
 
     @app.exception(Exception)
     async def on_exception(request: Request, exception: Exception):

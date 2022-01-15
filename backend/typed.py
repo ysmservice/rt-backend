@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 from sanic import Sanic, Blueprint, response
 from discord.ext import commands
-from jinja2 import Environment
+from miko import Manager
 
 from aiomysql import Pool
 
@@ -37,7 +37,7 @@ class GuildData(TypedDict):
 class TypedContext(SimpleNamespace):
     pool: Pool
     bot: "TypedBot"
-    env: Environment
+    env: Manager
     secret: dict
     datas: Datas
     tasks: List[Callable]

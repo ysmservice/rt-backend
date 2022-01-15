@@ -46,8 +46,8 @@ class hCaptcha:
             sitekey_key or self.default_sitekey_key: sitekey or self.default_sitekey
         }
         keys.update(kwargs)
-        return await self.app.ctx.template(
-            template or self.default_template, keys=keys
+        return await self.app.ctx.env.render(
+            template or self.default_template, **keys
         )
 
     def end(

@@ -25,7 +25,7 @@ aiolistdir = wrap(listdir)
 def on_load(app: TypedSanic):
     captcha = hCaptcha(
         app, app.ctx.secret["hCaptcha"]["test" if app.ctx.test else "production"],
-        app.ctx.secret["secret_key"], "captcha.html", "sitekey",
+        app.ctx.secret["secret_key"], f"{TEMPLATE_FOLDER}/captcha.html", "sitekey",
         "20000000-ffff-ffff-ffff-000000000002" if app.ctx.test
         else "0a50268d-fa1e-405f-9029-710309aad1b0"
     )
@@ -44,13 +44,12 @@ def on_load(app: TypedSanic):
     @CoolDown(2, 10, COOLDOWN)
     @captcha.end(check=lambda data: data["timeout"] > time())
     async def captcha_end(request: Request):
-        return await app.ctx.template(
-            "captcha_result.html", keys={
-                "result": "認証に成功しました。以下のコードをDiscordで選択してください。"
-                    if request.ctx.success else "認証に失敗しました。もう一度五秒後に挑戦してください。",
-                "code": decrypt(request.ctx.data["data"], app.ctx.secret["normal_secret_key"])
-                    if request.ctx.success else "Failed..."
-            }
+        return await app.ctx.env.render(
+            f"{TEMPLATE_FOLDER}/captcha_result.html",
+            result="認証に成功しました。以下のコードをDiscordで選択してください。"
+                if request.ctx.success else "認証に失敗しました。もう一度五秒後に挑戦してください。",
+            code=decrypt(request.ctx.data["data"], app.ctx.secret["normal_secret_key"])
+                if request.ctx.success else "Failed..."
         )
 
     @bp.post("/image/post")
