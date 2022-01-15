@@ -12,7 +12,6 @@ from sys import argv
 
 from sanic.exceptions import SanicException
 from sanic.errorpages import HTMLRenderer
-from sanic.request import Request
 from sanic.log import logger
 from sanic import response
 
@@ -26,7 +25,10 @@ from ujson import loads, dumps
 from jishaku.functools import executor_function
 from aiomysql import create_pool
 
-from .typed import Datas, TypedSanic, TypedBot, TypedBlueprint, Packet, PacketData, Self
+from .typed import (
+    Datas, TypedRequest as Request, TypedSanic, TypedBot, TypedBlueprint,
+    Packet, PacketData, Self
+)
 from .utils import cooldown, wrap_html, DEFAULT_GET_REMOTE_ADDR, is_bot_ip
 from .rtc import on_load as rtc_on_load
 from .oauth import DiscordOAuth

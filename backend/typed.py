@@ -7,6 +7,7 @@ from typing import (
 from types import SimpleNamespace
 
 from sanic import Sanic, Blueprint, response
+from sanic.request import Request
 from discord.ext import commands
 from miko import Manager
 
@@ -43,6 +44,7 @@ class TypedContext(SimpleNamespace):
     tasks: List[Callable]
     oauth: "DiscordOAuth"
     languages: Dict[int, str]
+    rtc: "RTConnection"
 
     def template(
         self, path: str, keys: dict = {}, **kwargs
@@ -60,6 +62,10 @@ class TypedContext(SimpleNamespace):
 
 class TypedSanic(Sanic):
     ctx: TypedContext
+
+
+class TypedRequest(Request):
+    app: TypedSanic
 
 
 class TypedBot(commands.Bot):
