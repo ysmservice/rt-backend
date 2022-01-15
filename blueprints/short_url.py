@@ -24,7 +24,12 @@ ROUTINE_URLS = (
     "https://www.nicovideo.jp/watch/sm14796309",
     "https://www.nicovideo.jp/watch/sm37658498",
     "https://www.nicovideo.jp/watch/sm33175756",
-    "https://www.nicovideo.jp/watch/sm36314738"
+    "https://www.nicovideo.jp/watch/sm36314738",
+    "https://www.youtube.com/watch?v=yj1jC0AmxVA",
+    "https://www.nicovideo.jp/watch/sm25227811",
+    "https://www.nicovideo.jp/watch/sm21894027",
+    "https://www.nicovideo.jp/watch/sm21894027",
+    "https://www.youtube.com/watch?v=a-nTCawDhII"
 )
 
 

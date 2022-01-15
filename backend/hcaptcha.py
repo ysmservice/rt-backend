@@ -3,7 +3,7 @@
 from typing import TYPE_CHECKING, Callable, Coroutine, Any, Union, Optional, Tuple
 
 from sanic.exceptions import SanicException, ServiceUnavailable
-from sanic.response import HTTPResponse
+from sanic.response import HTTPResponse, html
 from sanic.request import Request
 
 from reprypt import encrypt, decrypt, convert_hex
@@ -46,9 +46,9 @@ class hCaptcha:
             sitekey_key or self.default_sitekey_key: sitekey or self.default_sitekey
         }
         keys.update(kwargs)
-        return await self.app.ctx.env.render(
+        return html(await self.app.ctx.env.aiorender(
             template or self.default_template, **keys
-        )
+        ))
 
     def end(
         self, extract_data: Callable[..., str] = \
