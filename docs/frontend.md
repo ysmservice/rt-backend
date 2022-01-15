@@ -3,7 +3,7 @@ RTののAPIのドキュメントです。
 
 ## Base
 ### ベースURL
-`https://rt-bot/api`のURLから始まります。
+`https://rt-bot.com/api`のURLから始まります。
 ### ベースデータ
 ```js
 {
