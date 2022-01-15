@@ -49,12 +49,12 @@ def NewSanic(
     app: TypedSanic = TypedSanic(*sanic_args, **sanic_kwargs)
 
     # テンプレートエンジンを用意する。
-    def layout(title, description, content, head="", **kwargs):
+    def layout(title, description, content, head=""):
         return app.ctx.env.render(
             f"{template_folder}/layout.html", content=content,
             head=f"""<title>{title}</title>
             <meta name="description" content="{description}">
-            {head}""", **kwargs
+            {head}"""
         )
     app.ctx.env = Manager(extends={"layout": layout})
 
