@@ -60,4 +60,4 @@ for name in listdir(BLUEPRINTS_FOLDER):
             logger.info(f"Loaded blueprint : {name}")
 
 
-app.run(**secret["app"])
+app.run(**secret["app"], fast=True)
