@@ -4,7 +4,7 @@ from backend import TypedBlueprint, Self, Request
 from backend.utils import api, is_okip, try_loads
 
 
-bp = TypedBlueprint("API.Help")
+bp = TypedBlueprint("API_Help")
 me = Self(bp=bp)
 me.data = {}
 

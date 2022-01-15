@@ -17,7 +17,7 @@ from backend.utils import api, is_okip, try_loads
 from data import TEMPLATE_FOLDER
 
 
-bp = TypedBlueprint("API.TTS", "/tts")
+bp = TypedBlueprint("API_TTS", "/tts")
 aioexists = executor_function(exists)
 class TypedSelf(Self):
     queue: asyncio.Queue

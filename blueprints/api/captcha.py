@@ -17,7 +17,7 @@ from backend.utils import CoolDown, is_okip, api
 from data import TEMPLATE_FOLDER
 
 
-bp = TypedBlueprint("API.Captcha", "captcha")
+bp = TypedBlueprint("API_Captcha", "captcha")
 TIMEOUT = 300
 COOLDOWN = "クールダウン中です。{}秒後にもう一度お試しください。"
 aioexists = wrap(exists)

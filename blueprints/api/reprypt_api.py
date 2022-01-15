@@ -7,7 +7,7 @@ from sanic.exceptions import SanicException
 from reprypt import encrypt, decrypt
 
 
-bp = TypedBlueprint("API.Reprypt")
+bp = TypedBlueprint("API_Reprypt")
 
 
 @bp.route("/reprypt", methods=["POST"])

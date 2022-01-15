@@ -3,7 +3,7 @@
 from backend import TypedBlueprint, response
 
 
-bp = TypedBlueprint("api.test")
+bp = TypedBlueprint("api_test")
 
 
 @bp.route("/ping")

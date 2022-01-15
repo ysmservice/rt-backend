@@ -4,7 +4,7 @@ from backend import TypedSanic, TypedBlueprint, Request
 from backend.utils import api, is_okip, try_loads
 
 
-bp = TypedBlueprint("API.ShortURL")
+bp = TypedBlueprint("API_ShortURL")
 
 
 @bp.route("/shorturl", methods=["POST"])

@@ -7,7 +7,6 @@ from backend.utils import api
 
 from traceback import print_exc
 
-from .dashboard import bp as dashboard_bp, on_load as dashboard_on_load
 from .captcha import bp as captcha_bp, on_load as captcha_on_load
 from .guild import bp as guild_bp, on_load as guild_on_load
 from .oauth import bp as oauthbp, on_load as oauth_on_load
@@ -21,18 +20,17 @@ from .help import bp as helpbp
 
 blueprints = (
     testbp, helpbp, short_url_bp, newsbp, ttsbp, oauthbp, captcha_bp, repryptbp,
-    dashboard_bp, guild_bp
+    guild_bp
 )
 on_loads = (
-    news_on_load, tts_on_load, oauth_on_load, captcha_on_load, dashboard_on_load,
-    guild_on_load
+    news_on_load, tts_on_load, oauth_on_load, captcha_on_load, guild_on_load
 )
 bp = TypedBlueprint.group(*blueprints, url_prefix="/api")
 
 
 def on_load(app: TypedSanic):
     for cbp in blueprints:
-        cbp.app = app
+        cbp.__class__.app = app
     for on_load_ in on_loads:
         on_load_(app)
 

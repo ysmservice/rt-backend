@@ -24,11 +24,11 @@ class DataManager(DatabaseManager):
         return [row for row in await cursor.fetchall() if row]
 
 
-bp = TypedBlueprint("API.News")
+bp = TypedBlueprint("API_News")
 
 
 def on_ready(app: TypedSanic):
-    bp.data = DataManager(app)
+    bp.__class__.data = DataManager(app)
 
 
 def on_load(app: TypedSanic):
