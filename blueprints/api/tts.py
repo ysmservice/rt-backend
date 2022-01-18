@@ -28,7 +28,6 @@ me = TypedSelf()
 
 
 def on_ready(app):
-    me.queue = asyncio.Queue(loop=app.loop)
     me.bot = app.ctx.bot
 
 
@@ -40,6 +39,7 @@ def on_load(app):
 @is_okip(bp)
 class RoutineLoader(WebSocket):
     async def ready(self, _):
+        me.queue = asyncio.Queue(loop=self.loop)
         me.ws = self
         while not me.bot.is_closed():
             try:
