@@ -2,15 +2,16 @@
 
 from typing import Dict
 
+from base64 import decodebytes
+from os.path import exists
+import asyncio
+
 from sanic.exceptions import ServiceUnavailable
 from sanic.response import file_stream
 
 from jishaku.functools import executor_function
 from aiofiles import open as async_open
 from aiofiles.os import remove
-from base64 import decodebytes
-from os.path import exists
-import asyncio
 
 from backend import TypedBot, TypedBlueprint, Request, WebSocket, Self, PacketData
 from backend.utils import api, is_okip, try_loads
@@ -39,7 +40,7 @@ def on_load(app):
 @is_okip(bp)
 class RoutineLoader(WebSocket):
     async def ready(self, _):
-        me.queue = asyncio.Queue(loop=self.loop)
+        me.queue = asyncio.Queue(loop=self.request.app.loop)
         me.ws = self
         while not me.bot.is_closed():
             try:
