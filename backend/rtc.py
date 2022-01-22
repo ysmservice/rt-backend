@@ -2,42 +2,39 @@
 
 from typing import Literal, Union, Any, Tuple
 
-from asyncio import Event
+from asyncio import sleep
 
 from sanic.log import logger
 from sanic import Request
 
-from .rt_module.src import rtc
+from .rt_module.src.rtc import RTConnection
 from .utils import is_okip
+
+
+class ExtendedRTConnection(RTConnection):
+    def logger(
+        self, mode: Union[Literal["info", "debug", "warn", "error"], str],
+        word: str, *args, **kwargs
+    ) -> Any:
+        "ログ出力をします。"
+        return getattr(logger, mode)(f"[RTConnection] {word}", *args, **kwargs)
 
 
 def on_load(app):
     app.ctx.app = app
-    app.ctx.rtc_ready = Event()
+    rtc = app.ctx.rtc = ExtendedRTConnection("Backend")
+    app.ctx.env.extends["rtc"] = rtc
+    async def _logger(data: Tuple[str, str]) -> None:
+        return rtc.logger(*data)
+    rtc.set_event(_logger, "logger")
+
+
     @app.websocket("/rtc")
     @is_okip(app.ctx)
-    class RTConnection(rtc.RTConnection):
-
-        NAME = "Backend"
-
-        def __init__(self, request: Request):
-            super().__init__(self.NAME, loop=request.app.loop)
-            request.app.ctx.rtc = self
-            request.app.ctx.env.extends["rtc"] = self
-            request.app.ctx.rtc_ready.set()
-            self.set_event(self._logger, "logger")
-
-        def __new__(cls, request: Request, ws, *args, **kwargs):
-            self = super().__new__(cls)
-            self.__init__(request)
-            return self.communicate(ws, True)
-
-        def logger(
-            self, mode: Union[Literal["info", "debug", "warn", "error"], str],
-            word: str, *args, **kwargs
-        ) -> Any:
-            "ログ出力をします。"
-            return getattr(logger, mode)(f"[RTConnection] {word}", *args, **kwargs)
-
-        async def _logger(self, data: Tuple[str, str]) -> None:
-            return self.logger(*data)
+    async def rtc_connect(_: Request, ws):
+        rtc.set_loop(app.loop)
+        if rtc.connected:
+            await rtc.ws.close()
+        while rtc.connected:
+            await sleep(0.03)
+        return await rtc.communicate(ws, True)
