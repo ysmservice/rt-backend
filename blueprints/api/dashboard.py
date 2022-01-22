@@ -19,14 +19,21 @@ def on_load(app: TypedSanic):
     async def update_dashboard_data(new_data: dict[CommandData]):
         global data
         data = new_data
-        log("info", "Update", "data")
-        print(1)
+        log("info", "Update", ".data")
     app.ctx.rtc.set_event(update_dashboard_data, "dashboard.update")
 
 
     @app.get("/api/dashboard/get")
     async def get(_: Request):
-        return api("Ok", data)
+        if data:
+            return api("Ok", {
+                "data": data, "guilds": {
+                    guild["name"]: guild["id"]
+                    for guild in await app.ctx.rtc.request("get_")
+                }
+            })
+        else:
+            return api("Error", None, 503)
 
 
     @app.post("/api/dashboard/post")

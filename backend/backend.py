@@ -75,6 +75,7 @@ def NewSanic(
     @app.listener("before_server_start")
     async def prepare(app: TypedSanic, loop: AbstractEventLoop):
         # データベースのプールの準備をする。
+        global made_bot
         pool_kwargs["loop"] = loop
         app.ctx.pool = await create_pool(*pool_args, **pool_kwargs)
         # Discordのデバッグ用のBotの準備をする。
@@ -87,6 +88,7 @@ def NewSanic(
             on_setup_bot(app.ctx.bot)
             loop.create_task(app.ctx.bot.start(token, reconnect=reconnect))
             await app.ctx.bot.wait_until_ready()
+            made_bot = True
         logger.info("Connected to Discord")
         app.ctx.bot.dispatch("on_loop_ready", app)
         # データベースなどの準備用の関数達を実行する。
@@ -94,7 +96,7 @@ def NewSanic(
             task(app)
         del app.ctx.tasks
 
-    @app.listener("after_server_stop")
+    @app.listener("before_server_stop")
     async def close(app: TypedSanic, _: AbstractEventLoop):
         # プールとBotを閉じる。
         app.ctx.bot.dispatch("close")

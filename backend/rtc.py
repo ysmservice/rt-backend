@@ -35,6 +35,5 @@ def on_load(app):
         rtc.set_loop(app.loop)
         if rtc.connected:
             await rtc.ws.close()
-        while rtc.connected:
-            await sleep(0.03)
+            rtc.ready.clear()
         return await rtc.communicate(ws, True)
