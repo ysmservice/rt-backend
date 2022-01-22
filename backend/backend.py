@@ -37,6 +37,7 @@ from .oauth import DiscordOAuth
 aioexists = executor_function(exists)
 aioisfile = executor_function(isfile)
 aioisdir = executor_function(isdir)
+made_bot = False
 
 
 def NewSanic(
@@ -56,7 +57,9 @@ def NewSanic(
             <meta name="description" content="{description}">
             {head}"""
         )
-    app.ctx.env = Manager(extends={"layout": layout})
+    app.ctx.env = Manager(
+        extends={"layout": layout, "app": app, "loads": loads, "dumps": dumps}
+    )
 
     app.ctx.datas = {
         "ShortURL": {}
@@ -75,14 +78,15 @@ def NewSanic(
         pool_kwargs["loop"] = loop
         app.ctx.pool = await create_pool(*pool_args, **pool_kwargs)
         # Discordのデバッグ用のBotの準備をする。
-        bot_kwargs["loop"] = loop
-        app.ctx.bot = TypedBot(*bot_args, **bot_kwargs)
-        app.ctx.bot.app = app
-        app.ctx.bot.pool = app.ctx.pool
-        # Botの準備をさせてBotを動かす。
-        on_setup_bot(app.ctx.bot)
-        loop.create_task(app.ctx.bot.start(token, reconnect=reconnect))
-        await app.ctx.bot.wait_until_ready()
+        if not made_bot:
+            bot_kwargs["loop"] = loop
+            app.ctx.bot = TypedBot(*bot_args, **bot_kwargs)
+            app.ctx.bot.app = app
+            app.ctx.bot.pool = app.ctx.pool
+            # Botの準備をさせてBotを動かす。
+            on_setup_bot(app.ctx.bot)
+            loop.create_task(app.ctx.bot.start(token, reconnect=reconnect))
+            await app.ctx.bot.wait_until_ready()
         logger.info("Connected to Discord")
         app.ctx.bot.dispatch("on_loop_ready", app)
         # データベースなどの準備用の関数達を実行する。

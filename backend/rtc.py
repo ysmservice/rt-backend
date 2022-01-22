@@ -2,6 +2,8 @@
 
 from typing import Literal, Union, Any, Tuple
 
+from asyncio import Event
+
 from sanic.log import logger
 from sanic import Request
 
@@ -11,6 +13,7 @@ from .utils import is_okip
 
 def on_load(app):
     app.ctx.app = app
+    app.ctx.rtc_ready = Event()
     @app.websocket("/rtc")
     @is_okip(app.ctx)
     class RTConnection(rtc.RTConnection):
@@ -20,6 +23,8 @@ def on_load(app):
         def __init__(self, request: Request):
             super().__init__(self.NAME, loop=request.app.loop)
             request.app.ctx.rtc = self
+            request.app.ctx.env.extends["rtc"] = self
+            request.app.ctx.rtc_ready.set()
             self.set_event(self._logger, "logger")
 
         def __new__(cls, request: Request, ws, *args, **kwargs):
