@@ -2,8 +2,6 @@
 
 from typing import Literal, Union, Any, Tuple
 
-from asyncio import sleep
-
 from sanic.log import logger
 from sanic import Request
 
