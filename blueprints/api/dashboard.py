@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from functools import wraps
 
-from backend.rt_module.src.setting import CommandData
-from backend.utils import api, CoolDown, try_loads
+from backend.rt_module.src.setting import CommandData, CommandRunData
 from backend import TypedSanic, Request, logger
+from backend.utils import api, CoolDown, try_loads
 
 
 data: dict[str, CommandData] = {}
@@ -34,16 +34,26 @@ def on_load(app: TypedSanic):
         return new
 
 
-    @app.get("/api/dashboard/get/channels/<guild_id:int>")
+    @app.get("/api/dashboard/get/datas/<guild_id:int>")
     @app.ctx.oauth.require_login(True)
     @CoolDown(3, 1, MANYERR)
     @check_user
-    async def get_channels(_: Request, guild_id: int):
+    async def get_datas(_: Request, guild_id: int):
         "チャンネルのリストを取得します。"
         if guild := await app.ctx.rtc.request("get_guild", guild_id):
             return api("Ok", {
-                channel["id"]: channel["name"]
-                for channel in guild["channels"]
+                "channels": {
+                    channel["id"]: channel["name"]
+                    for channel in guild["channels"]
+                },
+                "roles": {
+                    role["id"]: role["name"]
+                    for role in guild["roles"]
+                },
+                "members": {
+                    member["id"]: member["name"]
+                    for member in guild["members"]
+                }
             })
         return api("Error", "Not Found", 404)
 
@@ -67,10 +77,19 @@ def on_load(app: TypedSanic):
             return api("Error", None, 503)
 
 
-    @app.post("/api/dashboard/post")
+    @app.post("/api/dashboard/post/<guild_id:int>/<channel_id:int>/<command_name>")
+    @app.ctx.oauth.require_login(True)
+    @CoolDown(3, 5, MANYERR)
     @check_user
-    async def run_command(request: Request):
-        "コマンドを実行する。"
+    async def run_command(
+        request: Request, guild_id: int, channel_id: int, command_name: str
+    ):
+        "コマンドを実行します。"
         return api(
-            "Ok", await app.ctx.rtc.request("dashboard.run", try_loads(request))
+            "Ok", await app.ctx.rtc.request(
+                "dashboard.run", CommandRunData(
+                    name=command_name, kwargs=try_loads(request), channel_id=channel_id,
+                    guild_id=guild_id, user_id=request.ctx.user.id
+                )
+            )
         )
