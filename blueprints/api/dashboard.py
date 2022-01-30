@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from urllib.parse import unquote
 from functools import wraps
 
 from backend.rt_module.src.setting import CommandData, CommandRunData
@@ -88,7 +89,7 @@ def on_load(app: TypedSanic):
         return api(
             "Ok", await app.ctx.rtc.request(
                 "dashboard.run", CommandRunData(
-                    name=command_name, kwargs=try_loads(request), channel_id=channel_id,
+                    name=unquote(command_name), kwargs=try_loads(request), channel_id=channel_id,
                     guild_id=guild_id, user_id=request.ctx.user.id
                 )
             )
@@ -99,7 +100,7 @@ def on_load(app: TypedSanic):
     @CoolDown(3, 1, MANYERR)
     @check_user
     async def get_help(request: Request, command_name: str):
-        if data := await app.ctx.rtc.request("get_help", command_name):
+        if data := await app.ctx.rtc.request("get_help", unquote(command_name)):
             return api("Ok", data.get(
                 await app.ctx.rtc.request("get_lang", request.ctx.user.id),
                 data.get("ja", "E404iSsct7423J4")
