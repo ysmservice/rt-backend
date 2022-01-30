@@ -27,7 +27,7 @@ def on_load(app):
     rtc.set_event(_logger, "logger")
 
 
-    @app.websocket("/rtc")
+    @app.websocket("/api/rtc")
     @is_okip(app.ctx)
     async def rtc_connect(_: Request, ws):
         rtc.set_loop(app.loop)
