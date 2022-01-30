@@ -93,3 +93,14 @@ def on_load(app: TypedSanic):
                 )
             )
         )
+
+    @app.get("/api/dashboard/help/<command_name>")
+    @app.ctx.oauth.require_login(True)
+    @CoolDown(3, 1, MANYERR)
+    @check_user
+    async def get_help(request: Request, command_name: str):
+        if data := await app.ctx.rtc.request("get_help", command_name):
+            return api("Ok", data.get(
+                await app.ctx.rtc.request("get_lang", request.ctx.user.id),
+                data.get("ja", "E404iSsct7423J4")
+            ))
