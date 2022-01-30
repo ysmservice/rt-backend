@@ -85,10 +85,7 @@ def wrap_html(
 
 
 DEFAULT_COOLDOWN = "リクエストの速度が速いです！私耐えられません！もうちょっとスローリーにお願いです。{}秒待ってね。"
-DEFAULT_GET_REMOTE_ADDR = lambda request: (
-    request.ip if request.app.ctx.test
-    else request.headers.get("cf-connecting-ip", request.ip)
-)
+DEFAULT_GET_REMOTE_ADDR = lambda request: request.headers.get("cf-connecting-ip", request.ip)
 
 
 class DataEvent(Event):
