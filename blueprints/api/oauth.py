@@ -18,10 +18,7 @@ def on_load(app: TypedSanic):
             data["user_name"] = str(request.ctx.user)
             data["id"] = request.ctx.user.id
             data["language"] = app.ctx.get_language(request.ctx.user.id)
-            data["icon"] = getattr(
-                request.ctx.user.avatar, "url",
-                "/img/discord.jpg"
-            )
+            data["icon"] = request.ctx.user.avatar_url
         return api("ok", data)
 
     @bp.route("/login")

@@ -5,22 +5,36 @@ from typing import (
 )
 from types import SimpleNamespace
 
-from sanic.exceptions import SanicException, ServiceUnavailable
-from sanic.response import redirect
-from discord.ext import tasks
-from discord import User
-
 from asyncio import AbstractEventLoop
-from ujson import loads, dumps
 from functools import wraps
 from random import randint
 from time import time
+
+from sanic.exceptions import SanicException
+from sanic.response import redirect
+from discord.ext import tasks
+
+from ujson import loads, dumps
 import reprypt
 import aiohttp
 
-from .typed import TypedSanic, TypedBot, CoroutineFunction
+from .typed import TypedSanic, CoroutineFunction
 from .utils import DEFAULT_GET_REMOTE_ADDR
 from .backend import Request
+
+
+class User:
+
+    id: int
+
+    def __init__(self, **kwargs):
+        self.id = int(kwargs.pop('id'))
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+        self.__data__ = kwargs
+
+    def __str__(self):
+        return f'{self.name}#{self.discriminator}'
 
 
 class CookieData(TypedDict):
@@ -36,7 +50,6 @@ class DiscordOAuth:
     "DiscordのOAuth認証の処理を手軽に作るためのクラスです。"
 
     BASE = "https://discord.com/api/v8/"
-    bot: Optional[TypedBot] = None
     loop: Optional[AbstractEventLoop] = None
 
     class TypedRequest(Request):
@@ -51,12 +64,12 @@ class DiscordOAuth:
         self.redirects: Dict[str, str] = {}
         self._session = None
         self.state_cache: Dict[str, Tuple[str, float]] = {}
-        self.app.ctx.tasks.append(
-            lambda app: (
-                setattr(self, "bot", app.ctx.bot)
-                and setattr(self, "loop", app.loop)
-            )
-        )
+        self.app.ctx.tasks.append(lambda app: setattr(self, "loop", app.loop))
+
+        @self.app.signal("server.shutdown.before")
+        async def on_close(app, loop):
+            if self.cache_remover.is_running():
+                self.cache_remover.cancel()
 
     @property
     def session(self) -> aiohttp.ClientSession:
@@ -119,14 +132,14 @@ class DiscordOAuth:
                 "Authorization": f"Bearer {token}"
             }
         ) as r:
-            return User(state=self.bot._connection, data=await r.json(loads=loads))
+            return User(**(await r.json(loads=loads)))
 
     async def get_user_cookie(self, cookie: str) -> Optional[User]:
         "クッキーからユーザーデータを取得します。"
         try:
-            return await self.bot.fetch_user(
-                int(loads(reprypt.decrypt(cookie, self.secret_key))["id"])
-            )
+            return User(**(await self.app.ctx.rtc.request(
+                "get_user", int(loads(reprypt.decrypt(cookie, self.secret_key))["id"])
+            )))
         except reprypt.DecryptError:
             return None
 
@@ -149,10 +162,6 @@ class DiscordOAuth:
         for state, (_, timeout) in list(self.state_cache.items()):
             if now > timeout:
                 del self.state_cache[state]
-
-    async def on_close(self):
-        if self.cache_remover.is_running():
-            self.cache_remover.cancel()
 
     def state_generator(self, request: Request, timeout: float = 300.0) -> str:
         "`require_login`の引数`state_generator`のデフォルトです。"
@@ -195,13 +204,9 @@ class DiscordOAuth:
         async def new_route(request: Request, *args, **kwargs):
             # もしcache_removerが動いていないのなら動かす。
             if hasattr(state_generator, "default") and not self.cache_remover.is_running():
-                self.bot.add_listener(self.on_close)
                 self.cache_remover.start()
 
             mode = "normal"
-
-            if self.bot is None:
-                raise ServiceUnavailable("まだ起動準備中なので処理を続行できませんでした。")
 
             if (data := request.cookies.get("session", None)) or force:
                 # もし既にクッキーがあるまたは強制モードならログインはパスする。
