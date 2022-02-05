@@ -57,7 +57,7 @@ async def is_bot_ip(request: "Request") -> bool:
 
 def api(
     message: str, data: Union[int, str, list, dict, None],
-    status: int = 200, ensure_ascii: bool = True, **kwargs
+    status: int = 200, ensure_ascii: bool = False, **kwargs
 ) -> response.HTTPResponse:
     "API用のレスポンスを返します。"
     kwargs["dumps"] = partial(dumps, ensure_ascii=ensure_ascii)

@@ -27,14 +27,19 @@ class User:
 
     id: int
 
-    def __init__(self, **kwargs):
-        self.id = int(kwargs.pop('id'))
-        for key, value in kwargs.items():
+    def __init__(self, data: dict):
+        self.__data__ = data.copy()
+        self.id = int(data.pop('id'))
+        if "username" in data:
+            self.name = data.pop("username")
+            self.avatar_url = "https://cdn.discordapp.com/avatars/{}/{}.png".format(
+                self.id, data.pop("avatar")
+            )
+        for key, value in data.items():
             setattr(self, key, value)
-        self.__data__ = kwargs
 
     def __str__(self):
-        return f'{self.name}#{self.discriminator}'
+        return self.full_name
 
 
 class CookieData(TypedDict):
@@ -132,14 +137,14 @@ class DiscordOAuth:
                 "Authorization": f"Bearer {token}"
             }
         ) as r:
-            return User(**(await r.json(loads=loads)))
+            return User(await r.json(loads=loads))
 
     async def get_user_cookie(self, cookie: str) -> Optional[User]:
         "クッキーからユーザーデータを取得します。"
         try:
-            return User(**(await self.app.ctx.rtc.request(
+            return User(await self.app.ctx.rtc.request(
                 "get_user", int(loads(reprypt.decrypt(cookie, self.secret_key))["id"])
-            )))
+            ))
         except reprypt.DecryptError:
             return None
 
