@@ -16,22 +16,6 @@ with open(AUTH_PATH, "r") as f:
     secret = load(f)
 
 
-def on_setup(bot: TypedBot) -> None:
-    bot.load_extension("jishaku")
-    # Cogを読み込む。
-    for name in listdir(COGS_FOLDER):
-        if (not name.startswith("_")
-                and ("." not in name or name.endswith(".py"))):
-            try:
-                bot.load_extension(
-                    f"{COGS_FOLDER}.{get_import_path(name)}"
-                )
-            except Exception as e:
-                logger.warning(f"Failed to load the extension : {e}")
-            else:
-                logger.info(f"Loaded extension : {name}")
-
-
 app = NewSanic(
     (), secret["mysql"], TEMPLATE_EXTS,
     TEMPLATE_FOLDER, secret["oauth"], "RT-Backend", dumps=dumps
@@ -49,7 +33,7 @@ for name in listdir(BLUEPRINTS_FOLDER):
             try:
                 module.bp.app = app
             except AttributeError:
-                pass
+                ...
             app.blueprint(module.bp)
             logger.info(f"Loaded blueprint : {name}")
 

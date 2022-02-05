@@ -4,7 +4,4 @@ miko-tpl
 ujson
 aiomysql
 aiofiles
-jishaku
 reprypt
-# Discord Web Manager
-nextcord
