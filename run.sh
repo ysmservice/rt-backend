@@ -1,1 +1,1 @@
-sudo -E python3.9 main.py production
+sudo -E python3.10 main.py production

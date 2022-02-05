@@ -126,11 +126,8 @@ def NewSanic(
     async def on_exception(request: Request, exception: Exception):
         # 500と501以外のSanicExceptionはエラーが出力されないようにする。
         if not isinstance(exception, SanicException):
+            print(format_exc())
             exception = SanicException("内部エラーが発生しました。", 500)
-            if app.ctx.test:
-                print(format_exc())
-            else:
-                logger.error(exception)
         return HTMLRenderer(request, exception, True).full()
 
     rtc_on_load(app)
