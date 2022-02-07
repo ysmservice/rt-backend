@@ -63,10 +63,6 @@ class hCaptcha:
         def decorator(func):
             @wraps(func)
             async def new(request: Request, *args, **kwargs):
-                # もしまだSanicが完全に起動していないのならエラーを発生させる。
-                if not self.app.ctx.bot.is_ready():
-                    raise ServiceUnavailable("まだ起動中のため処理を続行できませんでした。")
-
                 # 暗号化されたデータを解読する。
                 data = decrypt(
                     extract_data(request, *args, **kwargs), self.secret_key,
