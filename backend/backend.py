@@ -96,31 +96,35 @@ def NewSanic(
             return wrap_html(
                 request, SanicException("あなたはこのウェブサイトにアクセスすることができません。", 401)
             )
-
-        # ファイルが見つかればそのファイルを返す。
-        # パスを準備する。
-        path = request.path
-        if path:
-            if path[0] != "/":
-                path = f"/{path}"
+    
+        if request.host == "rtbo.tk":
+            if len([char for char in path.split("/") if char]) != 1:
+                return wrap_html(request, SanicException("ここは天国、二人で一つに！", 403))
         else:
-            path = "/"
-        path = f"{template_folder}{path}"
-        if await aioisdir(path):
-            # もしフォルダならindex.htmlを付け足す。
-            if path[-1] != "/":
-                path += "/"
-            path += "index.html"
-
-        # もしファイルが存在するならそのファイルを返す。
-        if await aioexists(path) and await aioisfile(path):
-            if path.endswith(template_engine_exts):
-                return response.html(await app.ctx.env.aiorender(path, eloop=app.loop))
+            # ファイルが見つかればそのファイルを返す。
+            # パスを準備する。
+            path = request.path
+            if path:
+                if path[0] != "/":
+                    path = f"/{path}"
             else:
-                if path.endswith((".mp4", ".mp3", ".wav", ".ogg", ".avi")):
-                    return await response.file_stream(path)
+                path = "/"
+            path = f"{template_folder}{path}"
+            if await aioisdir(path):
+                # もしフォルダならindex.htmlを付け足す。
+                if path[-1] != "/":
+                    path += "/"
+                path += "index.html"
+
+            # もしファイルが存在するならそのファイルを返す。
+            if await aioexists(path) and await aioisfile(path):
+                if path.endswith(template_engine_exts):
+                    return response.html(await app.ctx.env.aiorender(path, eloop=app.loop))
                 else:
-                    return await response.file(path)
+                    if path.endswith((".mp4", ".mp3", ".wav", ".ogg", ".avi")):
+                        return await response.file_stream(path)
+                    else:
+                        return await response.file(path)
 
     @app.exception(Exception)
     async def on_exception(request: Request, exception: Exception):
