@@ -98,7 +98,7 @@ def NewSanic(
             )
     
         if request.host == "rtbo.tk":
-            if len([char for char in path.split("/") if char]) != 1:
+            if len([char for char in request.path.split("/") if char]) != 1:
                 return wrap_html(request, SanicException("ここは天国、二人で一つに！", 403))
         else:
             # ファイルが見つかればそのファイルを返す。
