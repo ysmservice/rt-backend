@@ -100,7 +100,7 @@ def NewSanic(
         if request.host == "rtbo.tk":
             if request.path.startswith("/oldroutine"):
                 return await response.file_stream(
-                    f"data/routine/{request.path[request.path.find('/')+1:]}"
+                    f"data/routine/{request.path[request.path.rfind('/')+1:]}"
                 )
             if len([char for char in request.path.split("/") if char]) != 1:
                 return wrap_html(request, SanicException("ここは天国、二人で一つに！", 403))
