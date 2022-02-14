@@ -47,7 +47,20 @@ def NewSanic(
     app: TypedSanic = TypedSanic(*sanic_args, **sanic_kwargs)
 
     # テンプレートエンジンを用意する。
+    def l(**kwargs) -> str:
+        "複数言語対応用"
+        return "".join(
+            f'<div class="language {key}" hidden>{value}</div>'
+            for key, value in kwargs.items()
+        )
+    def cl(text: Union[str, dict[str, str]]) -> str:
+        "渡されたやつが辞書ならlに渡す。"
+        return l(**text) if isinstance(text, dict) else text
     def layout(title, description, content, head=""):
+        "一般のHTMLをレンダリングする関数です。"
+        title = cl(title)
+        description = cl(description)
+        content = cl(content)
         return app.ctx.env.render(
             f"{template_folder}/layout.html", content=content,
             head=f"""<title>{title}</title>
@@ -55,7 +68,9 @@ def NewSanic(
             {head}"""
         )
     app.ctx.env = Manager(
-        extends={"layout": layout, "app": app, "loads": loads, "dumps": dumps}
+        extends={
+            "layout": layout, "app": app, "loads": loads, "dumps": dumps, "l": l
+        }
     )
 
     app.ctx.datas = {
@@ -123,7 +138,9 @@ def NewSanic(
             # もしファイルが存在するならそのファイルを返す。
             if await aioexists(path) and await aioisfile(path):
                 if path.endswith(template_engine_exts):
-                    return response.html(await app.ctx.env.aiorender(path, eloop=app.loop))
+                    return response.html(await app.ctx.env.aiorender(
+                        path, eloop=app.loop, _=l
+                    ))
                 else:
                     if path.endswith((".mp4", ".mp3", ".wav", ".ogg", ".avi")):
                         return await response.file_stream(path)
