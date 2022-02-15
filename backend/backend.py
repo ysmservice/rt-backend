@@ -20,8 +20,8 @@ from websockets import (
 )
 from ujson import loads, dumps
 
-from jishaku.functools import executor_function
 from aiomysql import create_pool
+from jishaku.functools import executor_function
 
 from .typed import (
     Datas, TypedRequest as Request, TypedSanic, TypedBot, TypedBlueprint,
@@ -88,7 +88,11 @@ def NewSanic(
     async def prepare(app: TypedSanic, loop: AbstractEventLoop):
         # データベースのプールの準備をする。
         pool_kwargs["loop"] = loop
-        app.ctx.pool = await create_pool(*pool_args, **pool_kwargs)
+        app.ctx.pool = None
+        try: app.ctx.pool = await create_pool(*pool_args, **pool_kwargs)
+        except Exception as e: logger.warning(
+            f"Failed to set up aiomysql: {e.__class__.__name__} - {e}"
+        )
         # データベースなどの準備用の関数達を実行する。
         for task in app.ctx.tasks:
             task(app)

@@ -27,6 +27,9 @@ def on_load(app: TypedSanic):
         else:
             return text("None User")
 
+    if "hCaptcha" not in app.ctx.secret:
+        return
+
     captcha = hCaptcha(
         app, app.ctx.secret["hCaptcha"]["test"], app.ctx.secret["secret_key"],
         "captcha.html", "sitekey", "20000000-ffff-ffff-ffff-000000000002"

@@ -25,6 +25,8 @@ aiolistdir = wrap(listdir)
 
 
 def on_load(app: TypedSanic):
+    if "hCaptcha" not in app.ctx.secret: return
+
     captcha = hCaptcha(
         app, app.ctx.secret["hCaptcha"]["test" if app.ctx.test else "production"],
         app.ctx.secret["secret_key"], f"{TEMPLATE_FOLDER}/captcha.html", "sitekey",
