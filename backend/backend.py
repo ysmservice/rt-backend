@@ -47,10 +47,10 @@ def NewSanic(
     app: TypedSanic = TypedSanic(*sanic_args, **sanic_kwargs)
 
     # テンプレートエンジンを用意する。
-    def l(**kwargs) -> str:
+    def l(tag="div", **kwargs) -> str:
         "複数言語対応用"
         return "".join(
-            f'<div class="language {key}" hidden>{value}</div>'
+            f'<{tag} class="language {key}" hidden>{value}</{tag}>'
             for key, value in kwargs.items()
         )
     def cl(text: Union[str, dict[str, str]]) -> str:
@@ -65,7 +65,7 @@ def NewSanic(
             f"{template_folder}/layout.html", content=content,
             head=f"""<title>{title}</title>
             <meta name="description" content="{description}">
-            {head}"""
+            {head}""", _=l
         )
     app.ctx.env = Manager(
         extends={
