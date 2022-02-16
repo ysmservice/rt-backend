@@ -33,6 +33,6 @@ class DatabaseManager:
             finally:
                 await kwargs["cursor"].close()
                 if conn:
-                    conn.close()
+                    self.pool.release(conn)
             return data
         return new_coro
