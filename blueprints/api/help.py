@@ -32,7 +32,7 @@ async def help(request: Request):
 @bp.route("/help/get/<category>")
 async def get(request: Request, category: str, command_name: str = ""):
     category = CATEGORIES.get(category, category)
-    lang = "ja"
+    lang = request.args.get("lang", "ja")
     if command_name:
         data = {"g-title": category, "status": "Not found"}
         data["content"] = (
