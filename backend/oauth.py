@@ -241,7 +241,7 @@ class DiscordOAuth:
                     mode = "write-cookie"
             else:
                 # もしログインをしていないのならログインURLにリダイレクトさせる。
-                redirect_url = self.make_url(request, request.path)
+                redirect_url = self.make_url(request, request.args.get("redirect", request.path))
 
                 if state_generator:
                     state = state_generator(request)

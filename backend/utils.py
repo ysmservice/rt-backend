@@ -174,3 +174,10 @@ def cooldown(
     return CoolDown(
         1, seconds, message, wrap_html=wrap_html, cache_max=cache_max, **kwargs
     )
+
+
+async def response_file(path: str):
+    if path.endswith((".js", ".css", ".scss", ".html", ".htm", ".txt", ".py", ".xml")):
+        return await response.file(path)
+    else:
+        return await response.file_stream(path)

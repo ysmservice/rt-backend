@@ -12,6 +12,7 @@ from sanic.exceptions import SanicException
 from sanic.errorpages import HTMLRenderer
 from sanic.log import logger
 from sanic import response
+import sanic
 
 from miko import Manager
 
@@ -27,7 +28,7 @@ from .typed import (
     Datas, TypedRequest as Request, TypedSanic, TypedBot, TypedBlueprint,
     Packet, PacketData, Self
 )
-from .utils import cooldown, wrap_html, DEFAULT_GET_REMOTE_ADDR, is_bot_ip
+from .utils import cooldown, wrap_html, DEFAULT_GET_REMOTE_ADDR, is_bot_ip, response_file
 from .rtc import on_load as rtc_on_load
 from .oauth import DiscordOAuth
 
@@ -67,7 +68,7 @@ def NewSanic(
             <meta name="description" content="{description}">
             {head}""", _=l
         )
-    app.ctx.env = Manager(
+    app.ctx.env = app.ctx.miko = Manager(
         extends={
             "layout": layout, "app": app, "loads": loads, "dumps": dumps, "l": l
         }
@@ -78,6 +79,7 @@ def NewSanic(
     }
     app.ctx.tasks = []
     app.ctx.test = argv[-1] != "production"
+    sanic.__app__ = app
 
     app.ctx.oauth = DiscordOAuth(app, **oauth_kwargs)
 
@@ -146,10 +148,7 @@ def NewSanic(
                         path, eloop=app.loop, _=l
                     ))
                 else:
-                    if path.endswith((".mp4", ".mp3", ".wav", ".ogg", ".avi")):
-                        return await response.file_stream(path)
-                    else:
-                        return await response.file(path)
+                    return await response_file(path)
 
     @app.exception(Exception)
     async def on_exception(request: Request, exception: Exception):
