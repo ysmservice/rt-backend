@@ -8,12 +8,6 @@ from data import TEMPLATE_FOLDER
 
 
 HOST = "localhost" if __app__.ctx.test else "rocations.rt-bot.com"
-
-
-@__app__.route("/rocations")
-@__app__.route("/rocations/<path:path>")
-async def alias(request: Request, _: str = ""):
-    return redirect(f"http://{HOST}" if request.app.ctx.test else f"https://{HOST}")
 bp = Blueprint("Rocations", "/rocaltest" if __app__.ctx.test else "", host=HOST)
 
 
