@@ -123,7 +123,7 @@ def NewSanic(
                 )
             if len([char for char in request.path.split("/") if char]) != 1:
                 return wrap_html(request, SanicException("ここは天国、二人で一つに！", 403))
-        else:
+        elif request.host in ("rt-bot.com", "localhost"):
             # ファイルが見つかればそのファイルを返す。
             # パスを準備する。
             path = request.path
@@ -150,6 +150,9 @@ def NewSanic(
                         return await response.file_stream(path)
                     else:
                         return await response.file(path)
+        else:
+            return wrap_html(request, SanicException("ここは天国、二人で一つに！", 403))
+
 
     @app.exception(Exception)
     async def on_exception(request: Request, exception: Exception):
