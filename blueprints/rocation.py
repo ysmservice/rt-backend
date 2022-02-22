@@ -1,27 +1,42 @@
 # RT - Rocation
 
-from sanic.response import redirect, html, json
+from sanic.response import HTTPResponse, redirect, html
 from sanic.request import Request
 from sanic import Blueprint, __app__
+
+from backend.utils import CoolDown, api
 
 from data import TEMPLATE_FOLDER
 
 
-HOST = "localhost" if __app__.ctx.test else "rocations.rt-bot.com"
-bp = Blueprint("Rocations", "/rocaltest" if __app__.ctx.test else "", host=HOST)
+bp = Blueprint("Rocations", "/rocations")
+TABLE = "Rocations"
 
 
-@bp.route("/")
-async def index(request: Request):
-    return html(await request.app.ctx.miko.aiorender(f"{TEMPLATE_FOLDER}/rocations/index.html"))
-
-
-@bp.route("/<path:path>")
-async def path(request: Request, path):
-    return html(await request.app.ctx.miko.aiorender(f"{TEMPLATE_FOLDER}/rocations/{path}"))
+async def row2dict(row: tuple) -> dict:
+    return {
+        "name": (await __app__.ctx.rtc.request("get_guild", row[0]))["name"],
+        "description": row[1], "tags": row[2], "nices": row[3], "invite": row[4],
+        "raised": row[5]
+    }
 
 
 @bp.route("/api/gets/<page:int>")
+@CoolDown(7, 10)
 async def page(request: Request, page: int):
     assert 0 <= page < 50, "これ以上ページを開けません。"
-    return json(await request.app.ctx.rtc.request("get_rocations", page))
+    page = 10 * page - 10
+    async with request.app.ctx.pool.acquire() as conn:
+        async with conn.cursor() as cursor:
+            await cursor.execute(
+                f"SELECT * FROM {TABLE} WHERE language = %s ORDER BY raised LIMIT {page}, 10;",
+                (request.args.get("language", "ja"),)
+            )
+            rows = await cursor.fetchall()
+    if rows:
+        datas = {}
+        for row in filter(lambda row: bool(row), rows):
+            datas[row[0]] = await row2dict(row)
+        return api("Ok", datas)
+    else:
+        return api("Error", None, 404)

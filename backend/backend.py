@@ -108,7 +108,7 @@ def NewSanic(
     @app.middleware
     @cooldown(app.ctx, 0.1, from_path=True, wrap_html=True)
     async def on_request(request: Request):
-        if not app.ctx.test and request.host.startswith("146.59.153.178"):
+        if (rawip := request.host.startswith("146.59.153.178")) and not app.ctx.test:
             if "api" not in request.path or not await is_bot_ip(request):
                 return wrap_html(
                     request, SanicException("生IPアドレスへのアクセスは禁じられています。", 403)
@@ -125,7 +125,7 @@ def NewSanic(
                 )
             if len([char for char in request.path.split("/") if char]) != 1:
                 return wrap_html(request, SanicException("ここは天国、二人で一つに！", 403))
-        else:
+        elif request.host in ("rt-bot.com", "localhost") or rawip:
             # ファイルが見つかればそのファイルを返す。
             # パスを準備する。
             path = request.path
@@ -149,6 +149,8 @@ def NewSanic(
                     ))
                 else:
                     return await response_file(path)
+        elif request.host not in ("rocations.rt-bot.com", "rocations.localhost"):
+            return wrap_html(request, SanicException("ここは天国、二人で一つに！", 403))
 
     @app.exception(Exception)
     async def on_exception(request: Request, exception: Exception):
