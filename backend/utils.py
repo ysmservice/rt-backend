@@ -4,15 +4,19 @@ from typing import (
     TYPE_CHECKING, Callable, Coroutine, Optional, Union, Any, List, Dict, Tuple
 )
 
+from traceback import print_exc
+
+from socket import gethostbyname
+from asyncio import Event
+from time import time
+
 from sanic import response, request, exceptions
 from sanic.errorpages import HTMLRenderer
+from sanic.log import logger
 
 from jishaku.functools import executor_function
 from functools import wraps, partial
-from socket import gethostbyname
 from ujson import loads, dumps
-from asyncio import Event
-from time import time
 
 if TYPE_CHECKING:
     from .backend import TypedBlueprint, Request

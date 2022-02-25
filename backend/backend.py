@@ -28,7 +28,7 @@ from .typed import (
     Datas, TypedRequest as Request, TypedSanic, TypedBot, TypedBlueprint,
     Packet, PacketData, Self
 )
-from .utils import cooldown, wrap_html, DEFAULT_GET_REMOTE_ADDR, is_bot_ip, response_file
+from .utils import cooldown, wrap_html, DEFAULT_GET_REMOTE_ADDR, is_bot_ip, response_file, api
 from .rtc import on_load as rtc_on_load
 from .oauth import DiscordOAuth
 
@@ -155,10 +155,31 @@ def NewSanic(
     @app.exception(Exception)
     async def on_exception(request: Request, exception: Exception):
         # 500と501以外のSanicExceptionはエラーが出力されないようにする。
-        if not isinstance(exception, SanicException):
-            print(format_exc())
-            exception = SanicException("内部エラーが発生しました。", 500)
-        return HTMLRenderer(request, exception, True).full()
+        if "api" in request.path:
+            status = 200
+            if isinstance(exception, AssertionError):
+                if isinstance(exception.args[0], tuple):
+                    status = exception.args[0][0]
+                    res = api(exception.args[0][1], None, status)
+                else:
+                    status = 400
+                    res = api(str(exception), None, status)
+            elif isinstance(exception, SanicException):
+                status = exception.status_code
+                res = api(str(exception), None, exception.status_code)
+            else:
+                status = 500
+                res = api(str(exception), None, 500)
+
+            if status in (500, 501):
+                # もし内部エラーが発生したのならログを出力しておく。
+                logger.error(f"Error on {request.path} : {format_exc()}")
+            return res
+        else:
+            if not isinstance(exception, SanicException):
+                logger.error(f"Error on {request.path} : {format_exc()}")
+                exception = SanicException("内部エラーが発生しました。", 500)
+            return HTMLRenderer(request, exception, True).full()
 
     rtc_on_load(app)
 
