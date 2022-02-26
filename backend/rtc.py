@@ -5,7 +5,7 @@ from typing import Literal, Union, Any, Tuple
 from sanic.log import logger
 from sanic import Request
 
-from .rt_module.src.rtc import RTConnection
+from .rt_module.src.rtws import RTConnection
 from .utils import is_okip
 
 
