@@ -53,10 +53,9 @@ def on_load(app: TypedSanic):
                         (must_arg,)
                     )
                     rows = await cursor.fetchall()
-        datas = {}
-        for row in filter(lambda row: bool(row), rows):
-            datas[row[0]] = await request.app.ctx.rtc.request("get_rocations", row)
-        return api("Ok", datas)
+        return api("Ok", await request.app.ctx.rtc.request(
+            "get_rocations", list(filter(lambda row: bool(row), rows))
+        ))
 
 
     @app.post("/api/rocations/nice/<guild_id:int>")
