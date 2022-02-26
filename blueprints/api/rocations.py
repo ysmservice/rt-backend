@@ -17,11 +17,8 @@ async def row2dict(row: tuple) -> dict:
     nices = loads(row[3])
     reviews = []
     for user_id, nice in filter(lambda x: x[1], nices.items()):
-        user = {"name": "名無しの権兵衛", "avatar": ""}
-        for tentative in data["members"]:
-            if str(tentative["id"]) == user_id:
-                user["name"] = tentative["name"]
-                user["avatar"] = tentative["avatar_url"]
+        user = await __app__.ctx.rtc.request("get_user", int(user_id)) or \
+            {"name": "名無しの権兵衛", "avatar": ""}
         reviews.append({"user": user, "message": nice})
     return {
         "name": data["name"], "icon": data["avatar_url"], "niceCount": len(nices),
