@@ -12,22 +12,6 @@ from backend.utils import CoolDown, api
 TABLE = "Rocations"
 
 
-async def row2dict(row: tuple) -> dict:
-    data = await __app__.ctx.rtc.request("get_guild", row[0])
-    nices = loads(row[3])
-    reviews = []
-    for user_id, nice in filter(lambda x: x[1], nices.items()):
-        user = await __app__.ctx.rtc.request("get_user", int(user_id)) or \
-            {"name": "名無しの権兵衛", "avatar": ""}
-        if "avatar_url" in user: user["avatar"] = user.pop("avatar_url")
-        reviews.append({"user": user, "message": nice})
-    return {
-        "name": data["name"], "icon": data["avatar_url"], "niceCount": len(nices),
-        "description": row[1], "tags": loads(row[2]), "reviews": reviews, "invite": row[4],
-        "raised": row[5]
-    }
-
-
 def on_load(app: TypedSanic):
     @app.route("/api/rocations/gets")
     @CoolDown(7, 10, "リクエストが多すぎます。｜Too many requests.")
@@ -71,7 +55,7 @@ def on_load(app: TypedSanic):
                     rows = await cursor.fetchall()
         datas = {}
         for row in filter(lambda row: bool(row), rows):
-            datas[row[0]] = await row2dict(row)
+            datas[row[0]] = await request.app.ctx.rtc.request("get_rocations", row)
         return api("Ok", datas)
 
 
