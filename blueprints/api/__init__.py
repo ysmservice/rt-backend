@@ -50,9 +50,9 @@ def on_load(app: TypedSanic):
             await process_psutil()
         )
 
-    app.ctx.rtc.set_event(get_backend_status)
+    app.ctx.rtws.set_event(get_backend_status)
 
 
 @general.get("status")
 async def get_status(request: Request):
-    return api("Ok", await request.app.ctx.rtc.request("get_status", None))
+    return api("Ok", await request.app.ctx.rtws.request("get_status", None))

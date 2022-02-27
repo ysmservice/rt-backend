@@ -142,7 +142,7 @@ class DiscordOAuth:
     async def get_user_cookie(self, cookie: str) -> Optional[User]:
         "クッキーからユーザーデータを取得します。"
         try:
-            return User(await self.app.ctx.rtc.request(
+            return User(await self.app.ctx.rtws.request(
                 "get_user", int(loads(reprypt.decrypt(cookie, self.secret_key))["id"])
             ))
         except reprypt.DecryptError:

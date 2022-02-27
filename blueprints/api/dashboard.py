@@ -21,7 +21,7 @@ def on_load(app: TypedSanic):
         global data
         data = new_data
         log("info", "Update", ".data")
-    app.ctx.rtc.set_event(update_dashboard_data, "dashboard.update")
+    app.ctx.rtws.set_event(update_dashboard_data, "dashboard.update")
 
 
     def check_user(func):
@@ -41,7 +41,7 @@ def on_load(app: TypedSanic):
     @check_user
     async def get_datas(_: Request, guild_id: int):
         "チャンネルのリストを取得します。"
-        if guild := await app.ctx.rtc.request("get_guild", guild_id):
+        if guild := await app.ctx.rtws.request("get_guild", guild_id):
             return api("Ok", {
                 "channels": {
                     channel["id"]: channel["name"]
@@ -69,7 +69,7 @@ def on_load(app: TypedSanic):
             return api("Ok", {
                 "data": data, "guilds": {
                     guild["id"]: guild["name"]
-                    for guild in await app.ctx.rtc.request(
+                    for guild in await app.ctx.rtws.request(
                         "get_guilds", request.ctx.user.id
                     )
                 }
@@ -87,7 +87,7 @@ def on_load(app: TypedSanic):
     ):
         "コマンドを実行します。"
         return api(
-            "Ok", await app.ctx.rtc.request(
+            "Ok", await app.ctx.rtws.request(
                 "dashboard.run", CommandRunData(
                     name=unquote(command_name), kwargs=try_loads(request), channel_id=channel_id,
                     guild_id=guild_id, user_id=request.ctx.user.id
@@ -100,8 +100,8 @@ def on_load(app: TypedSanic):
     @CoolDown(3, 1, MANYERR)
     @check_user
     async def get_help(request: Request, command_name: str):
-        if data := await app.ctx.rtc.request("get_help", unquote(command_name)):
+        if data := await app.ctx.rtws.request("get_help", unquote(command_name)):
             return api("Ok", data.get(
-                await app.ctx.rtc.request("get_lang", request.ctx.user.id),
+                await app.ctx.rtws.request("get_lang", request.ctx.user.id),
                 data.get("ja", "E404iSsct7423J4")
             ))

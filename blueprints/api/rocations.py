@@ -53,7 +53,7 @@ def on_load(app: TypedSanic):
                         (must_arg,)
                     )
                     rows = await cursor.fetchall()
-        return api("Ok", await request.app.ctx.rtc.request(
+        return api("Ok", await request.app.ctx.rtws.request(
             "get_rocations", list(filter(lambda row: bool(row), rows))
         ))
 

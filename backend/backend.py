@@ -29,7 +29,7 @@ from .typed import (
     Packet, PacketData, Self
 )
 from .utils import cooldown, wrap_html, DEFAULT_GET_REMOTE_ADDR, is_bot_ip, response_file, api
-from .rtc import on_load as rtc_on_load
+from .rtws import on_load as rtc_on_load
 from .oauth import DiscordOAuth
 
 

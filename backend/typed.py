@@ -15,7 +15,7 @@ from aiomysql import Pool
 
 if TYPE_CHECKING:
     from .oauth import DiscordOAuth
-    from .rtc import RTConnection
+    from .rtws import RTWebSocket
 
 
 class Datas(TypedDict):
@@ -44,7 +44,7 @@ class TypedContext(SimpleNamespace):
     tasks: List[Callable]
     oauth: "DiscordOAuth"
     languages: Dict[int, str]
-    rtc: "RTConnection"
+    rtws: "RTWebSocket"
 
     def template(
         self, path: str, keys: dict = {}, **kwargs
