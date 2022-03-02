@@ -74,6 +74,12 @@ def NewSanic(
         }
     )
 
+    async def render(path: str):
+        return response.html(await app.ctx.env.aiorender(
+            path, eloop=app.loop, _=l
+        ))
+    app.ctx.render = render
+
     app.ctx.datas = {
         "ShortURL": {}
     }

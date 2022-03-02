@@ -1,5 +1,6 @@
 # RT - Rocation
 
+from sanic.response import redirect
 from sanic.request import Request
 from sanic import __app__
 
@@ -10,9 +11,14 @@ from backend.utils import CoolDown, api
 
 
 TABLE = "Rocations"
+HOST = "rt-bot.com"
 
 
 def on_load(app: TypedSanic):
+    @app.route("/", host="rocations.%s" % HOST)
+    async def index_subdomain(_: Request):
+        return redirect(f"{f'http://{HOST}' if HOST == 'localhost' else f'https://{HOST}'}/rocations")
+
     @app.route("/api/rocations/gets")
     @CoolDown(7, 10, "リクエストが多すぎます。｜Too many requests.")
     async def page(request: Request):
