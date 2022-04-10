@@ -7,3 +7,4 @@ aiofiles
 reprypt
 onami
 psutil
+sanic-ext
