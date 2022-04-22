@@ -8,3 +8,4 @@ reprypt
 onami
 psutil
 sanic-ext
+jishaku
