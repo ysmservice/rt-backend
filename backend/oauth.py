@@ -154,7 +154,7 @@ class DiscordOAuth:
 
     def make_base_url(self, request: Request) -> str:
         "RequestからベースのURLを作ります。"
-        return f"{'http' if request.app.ctx.test else 'https'}://{request.host}"
+        return f"{'http' if request.app.ctx.test else 'https'}://{request.server_name}"
 
     def make_url(self, request: Request, path: str) -> str:
         "pathとrequestからURLを作ります。"
