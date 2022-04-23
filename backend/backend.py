@@ -31,7 +31,7 @@ from .typed import (
 from .utils import cooldown, wrap_html, DEFAULT_GET_REMOTE_ADDR, is_bot_ip, response_file, api
 from .rtws import on_load as rtc_on_load
 from .oauth import DiscordOAuth
-
+from urllib.parse import urlparse
 
 aioexists = executor_function(exists)
 aioisfile = executor_function(isfile)
@@ -131,7 +131,7 @@ def NewSanic(
                 )
             if len([char for char in request.path.split("/") if char]) != 1:
                 return wrap_html(request, SanicException("ここは天国、二人で一つに！", 403))
-        elif request.host in ("free-rt.com", "52.139.184.62") or rawip:
+        elif request.server_name in ("free-rt.com", "52.139.184.62") or rawip:
             # ファイルが見つかればそのファイルを返す。
             # パスを準備する。
             path = request.path
