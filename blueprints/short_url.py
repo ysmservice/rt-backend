@@ -6,7 +6,7 @@ from sanic.response import redirect
 from random import choice
 
 
-HOSTS = ("localhost", "rtbo.tk")
+HOSTS = ("localhost", "frrt.jp:8081")
 ROUTINE_URLS = (
     "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     "https://www.youtube.com/watch?v=ok7UX3utzvI",

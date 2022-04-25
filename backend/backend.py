@@ -124,7 +124,7 @@ def NewSanic(
                 request, SanicException("あなたはこのウェブサイトにアクセスすることができません。", 401)
             )
     
-        if request.host == "rtbo.tk":
+        if request.server_name == "frrt.jp":
             if request.path.startswith("/oldroutine"):
                 return await response.file_stream(
                     f"rt-frontend/data/routine/{request.path[request.path.rfind('/')+1:]}"
