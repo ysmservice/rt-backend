@@ -55,7 +55,7 @@ async def is_bot_ip(request: "Request") -> bool:
         return True
     ip = DEFAULT_GET_REMOTE_ADDR(request)
     if ip != bot_ip:
-        bot_ip = await get_ip("tasuren.f5.si")
+        bot_ip = "106.156.174.53"
     return ip == bot_ip
 
 
