@@ -38,7 +38,7 @@ def is_okip(bp: "TypedBlueprint", okip: Optional[List[str]] = None) -> Callable[
             ok = ip in (okip or bp.app.ctx.secret["okip"])
             ok = ok or ip == bot_ip
             if not ok:
-                bot_ip = await get_ip("tasuren.f5.si")
+                bot_ip = "106.156.174.53"
                 ok = bot_ip == ip
             if ok:
                 return await func(request, *args, **kwargs)
