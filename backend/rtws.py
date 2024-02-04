@@ -23,7 +23,7 @@ class ExtendedRTWebSocket(RTWebSocket):
         return self._real_ws
 
     def is_connected(self) -> bool:
-        return self.ws.connection.state == OPEN
+        return self.ws.ws_proto.state == OPEN
 
 
 def on_load(app):
