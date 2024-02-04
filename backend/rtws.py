@@ -39,7 +39,7 @@ def on_load(app):
     @app.websocket("/api/rtws")
     @is_okip(app.ctx)
     async def rtws_connect(_: Request, ws):
-        if rtws.ws is not None and rtws.ws.connection.state == OPEN:
+        if rtws.ws is not None and rtws.ws.ws_proto.state == OPEN:
             await rtws.close(1001, "再接続されたので切断しました。")
         rtws._real_ws = ws
         return await rtws.start(None, reconnect=False)
