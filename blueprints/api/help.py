@@ -23,13 +23,13 @@ CATEGORIES = {
 }
 
 
-@bp.route("/help")
+@bp.route("/help",name="help")
 async def help(request: Request):
     return api("ok", me.data)
 
 
-@bp.route("/help/get/<category>/<command_name>")
-@bp.route("/help/get/<category>")
+@bp.route("/help/get/<category>/<command_name>",name="helpget1")
+@bp.route("/help/get/<category>",name="helpget")
 async def get(request: Request, category: str, command_name: str = ""):
     category = CATEGORIES.get(category, category)
     lang = request.args.get("lang", "ja")

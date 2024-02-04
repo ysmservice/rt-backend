@@ -37,5 +37,5 @@ for name in listdir(BLUEPRINTS_FOLDER):
             app.blueprint(module.bp)
             logger.info(f"Loaded blueprint : {name}")
 
-
-app.run(**secret["app"])
+if __name__ == '__main__':
+    app.run(**secret["app"])

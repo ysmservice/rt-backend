@@ -35,8 +35,8 @@ def on_load(app: TypedSanic):
     app.ctx.tasks.append(on_ready)
 
 
-@bp.route("/news/<number:int>")
-@bp.route("/news")
+@bp.route("/news/<number:int>",name="news1")
+@bp.route("/news",name="news")
 async def news(_, number: int = None):
     rows = await bp.data.get_all()
     if number is not None:
